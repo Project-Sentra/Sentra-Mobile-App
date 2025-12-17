@@ -1,0 +1,3 @@
+const supabaseUrl = 'https://fouccavizcgbhvbemhov.supabase.co';
+const supabaseKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdWNjYXZpemNnYmh2YmVtaG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4Mjg4MDksImV4cCI6MjA4MTQwNDgwOX0.cNfKnyDX3W020pqSf8SaRAS6mc9k8BpiN7o932g6B7s';
