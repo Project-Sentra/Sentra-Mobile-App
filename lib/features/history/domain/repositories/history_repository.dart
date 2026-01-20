@@ -1,38 +1,22 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../parking/domain/entities/parking_session.dart';
-import '../../../parking/domain/entities/parking_receipt.dart';
-import '../../../parking/domain/entities/reservation.dart';
 
 abstract class HistoryRepository {
-  /// Get parking session history for a user
-  Future<Either<Failure, List<ParkingSession>>> getParkingHistory(
-    String userId,
-  );
+  /// Get all parking sessions (history)
+  Future<Either<Failure, List<ParkingSession>>> getParkingHistory();
 
-  /// Get active parking sessions for a user
-  Future<Either<Failure, List<ParkingSession>>> getActiveSessions(
-    String userId,
-  );
+  /// Get active parking sessions (no exit_time)
+  Future<Either<Failure, List<ParkingSession>>> getActiveSessions();
+
+  /// Get completed parking sessions
+  Future<Either<Failure, List<ParkingSession>>> getCompletedSessions();
 
   /// Get a specific parking session
-  Future<Either<Failure, ParkingSession>> getParkingSessionById(
-    String sessionId,
+  Future<Either<Failure, ParkingSession>> getParkingSessionById(int sessionId);
+
+  /// Search sessions by plate number
+  Future<Either<Failure, List<ParkingSession>>> searchByPlateNumber(
+    String plateNumber,
   );
-
-  /// Get reservation history for a user
-  Future<Either<Failure, List<Reservation>>> getReservationHistory(
-    String userId,
-  );
-
-  /// Get active reservations for a user
-  Future<Either<Failure, List<Reservation>>> getActiveReservations(
-    String userId,
-  );
-
-  /// Get receipt for a parking session
-  Future<Either<Failure, ParkingReceipt>> getReceipt(String sessionId);
-
-  /// Get all receipts for a user
-  Future<Either<Failure, List<ParkingReceipt>>> getReceipts(String userId);
 }

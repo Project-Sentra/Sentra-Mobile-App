@@ -3,40 +3,45 @@ import 'package:equatable/equatable.dart';
 enum SlotStatus { available, occupied, reserved, disabled }
 
 class ParkingSlot extends Equatable {
-  final String id;
-  final String facilityId;
-  final String slotNumber;
-  final String? floor;
-  final String? section;
-  final SlotStatus status;
+  final int id;
+  final String slotName;
+  final int? locationId;
+  final String? locationName;
+  final bool isOccupied;
   final String? reservedBy;
   final DateTime? reservedUntil;
   final DateTime? createdAt;
 
   const ParkingSlot({
     required this.id,
-    required this.facilityId,
-    required this.slotNumber,
-    this.floor,
-    this.section,
-    this.status = SlotStatus.available,
+    required this.slotName,
+    this.locationId,
+    this.locationName,
+    this.isOccupied = false,
     this.reservedBy,
     this.reservedUntil,
     this.createdAt,
   });
 
+  SlotStatus get status {
+    if (reservedBy != null && reservedUntil != null) {
+      if (reservedUntil!.isAfter(DateTime.now())) {
+        return SlotStatus.reserved;
+      }
+    }
+    return isOccupied ? SlotStatus.occupied : SlotStatus.available;
+  }
+
   bool get isAvailable => status == SlotStatus.available;
-  bool get isOccupied => status == SlotStatus.occupied;
   bool get isReserved => status == SlotStatus.reserved;
 
   @override
   List<Object?> get props => [
     id,
-    facilityId,
-    slotNumber,
-    floor,
-    section,
-    status,
+    slotName,
+    locationId,
+    locationName,
+    isOccupied,
     reservedBy,
     reservedUntil,
     createdAt,

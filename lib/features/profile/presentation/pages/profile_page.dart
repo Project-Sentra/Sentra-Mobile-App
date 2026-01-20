@@ -45,7 +45,8 @@ class _ProfilePageState extends State<ProfilePage> {
             final bloc = sl<ProfileBloc>();
             if (userId != null) {
               bloc.add(FetchUserProfile(userId));
-              bloc.add(FetchUserReservations(userId));
+              // Note: Sessions are now fetched by plate number, not user ID
+              // This would need the user's vehicle plate number
             }
             return bloc;
           },
@@ -213,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? Image.network(
                               profile!.avatarUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
+                              errorBuilder: (_, e, s) => const Icon(
                                 Icons.person,
                                 size: 48,
                                 color: AppColors.textSecondary,

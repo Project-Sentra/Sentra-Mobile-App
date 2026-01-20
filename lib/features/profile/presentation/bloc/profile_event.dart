@@ -16,13 +16,13 @@ class FetchUserProfile extends ProfileEvent {
   List<Object?> get props => [userId];
 }
 
-class FetchUserReservations extends ProfileEvent {
-  final String userId;
+class FetchUserSessions extends ProfileEvent {
+  final String plateNumber;
 
-  const FetchUserReservations(this.userId);
+  const FetchUserSessions(this.plateNumber);
 
   @override
-  List<Object?> get props => [userId];
+  List<Object?> get props => [plateNumber];
 }
 
 class SignOutRequested extends ProfileEvent {

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/parking_location.dart';
 
 abstract class ParkingEvent extends Equatable {
   const ParkingEvent();
@@ -7,28 +8,41 @@ abstract class ParkingEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class FetchParkingFacilities extends ParkingEvent {
-  const FetchParkingFacilities();
+class FetchParkingLocations extends ParkingEvent {
+  const FetchParkingLocations();
 }
 
-class SearchFacilities extends ParkingEvent {
+class FetchSpotsByLocation extends ParkingEvent {
+  final int locationId;
+
+  const FetchSpotsByLocation(this.locationId);
+
+  @override
+  List<Object?> get props => [locationId];
+}
+
+class SelectLocation extends ParkingEvent {
+  final ParkingLocation location;
+
+  const SelectLocation(this.location);
+
+  @override
+  List<Object?> get props => [location];
+}
+
+class SearchSpots extends ParkingEvent {
   final String query;
 
-  const SearchFacilities(this.query);
+  const SearchSpots(this.query);
 
   @override
   List<Object?> get props => [query];
 }
 
-class FetchRecentFacilities extends ParkingEvent {
-  final String userId;
-
-  const FetchRecentFacilities(this.userId);
-
-  @override
-  List<Object?> get props => [userId];
-}
-
 class ClearSearch extends ParkingEvent {
   const ClearSearch();
+}
+
+class BackToLocations extends ParkingEvent {
+  const BackToLocations();
 }

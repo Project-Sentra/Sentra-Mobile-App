@@ -1,27 +1,21 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
-import '../models/parking_facility_model.dart';
+import '../models/parking_location_model.dart';
 import '../models/parking_slot_model.dart';
-import '../models/reservation_model.dart';
 
 abstract class ParkingRemoteDataSource {
-  Future<List<ParkingFacilityModel>> getParkingFacilities();
-  Future<ParkingFacilityModel> getParkingFacilityById(String id);
-  Future<List<ParkingFacilityModel>> searchFacilities(String query);
-  Future<List<ParkingFacilityModel>> getRecentFacilities(String userId);
-  Future<List<ParkingSlotModel>> getParkingSlots(String facilityId);
-  Future<ParkingSlotModel> getParkingSlotById(String slotId);
-  Future<ReservationModel> reserveSlot({
-    required String slotId,
-    required String facilityId,
-    required String userId,
-    required int durationMinutes,
-  });
-  Future<void> cancelReservation(String reservationId);
-  Future<void> addToRecentFacilities({
-    required String userId,
-    required String facilityId,
-  });
+  // Locations
+  Future<List<ParkingLocationModel>> getParkingLocations();
+  Future<ParkingLocationModel> getParkingLocationById(int id);
+  Future<List<ParkingLocationModel>> searchLocations(String query);
+
+  // Spots
+  Future<List<ParkingSlotModel>> getParkingSpots();
+  Future<List<ParkingSlotModel>> getSpotsByLocation(int locationId);
+  Future<ParkingSlotModel> getParkingSpotById(int id);
+  Future<List<ParkingSlotModel>> searchSpots(String query);
+  Future<List<ParkingSlotModel>> getAvailableSpots();
+  Future<List<ParkingSlotModel>> getAvailableSpotsByLocation(int locationId);
 }
 
 class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
@@ -29,82 +23,151 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
 
   ParkingRemoteDataSourceImpl(this.supabaseClient);
 
-  @override
-  Future<List<ParkingFacilityModel>> getParkingFacilities() async {
-    try {
-      final response = await supabaseClient
-          .from('parking_facilities')
-          .select()
-          .order('name');
+  // ========== LOCATIONS ==========
 
-      return (response as List)
-          .map((json) => ParkingFacilityModel.fromJson(json))
-          .toList();
+  @override
+  Future<List<ParkingLocationModel>> getParkingLocations() async {
+    try {
+      // Try to get from parking_locations table
+      try {
+        final response = await supabaseClient
+            .from('parking_locations')
+            .select()
+            .eq('is_active', true)
+            .order('name');
+
+        final locations = (response as List)
+            .map((json) => ParkingLocationModel.fromJson(json))
+            .toList();
+
+        // Get slot counts for each location
+        return await _enrichLocationsWithSlotCounts(locations);
+      } catch (e) {
+        // If parking_locations doesn't exist, create a default location from spots
+        return [await _createDefaultLocation()];
+      }
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
+  Future<List<ParkingLocationModel>> _enrichLocationsWithSlotCounts(
+    List<ParkingLocationModel> locations,
+  ) async {
+    final enrichedLocations = <ParkingLocationModel>[];
+
+    for (final location in locations) {
+      try {
+        final spotsResponse = await supabaseClient
+            .from('parking_spots')
+            .select('id, is_occupied')
+            .eq('location_id', location.id);
+
+        final spots = spotsResponse as List;
+        final totalSlots = spots.length;
+        final availableSlots = spots
+            .where((s) => s['is_occupied'] == false)
+            .length;
+        final occupiedSlots = totalSlots - availableSlots;
+
+        enrichedLocations.add(
+          ParkingLocationModel(
+            id: location.id,
+            name: location.name,
+            address: location.address,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            pricePerHour: location.pricePerHour,
+            currency: location.currency,
+            imageUrl: location.imageUrl,
+            isActive: location.isActive,
+            totalSlots: totalSlots,
+            availableSlots: availableSlots,
+            occupiedSlots: occupiedSlots,
+            createdAt: location.createdAt,
+          ),
+        );
+      } catch (e) {
+        enrichedLocations.add(location);
+      }
+    }
+
+    return enrichedLocations;
+  }
+
+  Future<ParkingLocationModel> _createDefaultLocation() async {
+    // Create a virtual location from existing spots
+    final spotsResponse = await supabaseClient
+        .from('parking_spots')
+        .select('id, is_occupied');
+
+    final spots = spotsResponse as List;
+    final totalSlots = spots.length;
+    final availableSlots = spots.where((s) => s['is_occupied'] == false).length;
+
+    return ParkingLocationModel(
+      id: 0,
+      name: 'Main Parking',
+      address: 'Default Location',
+      pricePerHour: 100,
+      currency: 'LKR',
+      isActive: true,
+      totalSlots: totalSlots,
+      availableSlots: availableSlots,
+      occupiedSlots: totalSlots - availableSlots,
+    );
+  }
+
   @override
-  Future<ParkingFacilityModel> getParkingFacilityById(String id) async {
+  Future<ParkingLocationModel> getParkingLocationById(int id) async {
     try {
+      if (id == 0) {
+        return _createDefaultLocation();
+      }
+
       final response = await supabaseClient
-          .from('parking_facilities')
+          .from('parking_locations')
           .select()
           .eq('id', id)
           .single();
 
-      return ParkingFacilityModel.fromJson(response);
+      final location = ParkingLocationModel.fromJson(response);
+      final enriched = await _enrichLocationsWithSlotCounts([location]);
+      return enriched.first;
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<List<ParkingFacilityModel>> searchFacilities(String query) async {
+  Future<List<ParkingLocationModel>> searchLocations(String query) async {
     try {
       final response = await supabaseClient
-          .from('parking_facilities')
+          .from('parking_locations')
           .select()
-          .ilike('name', '%$query%')
+          .or('name.ilike.%$query%,address.ilike.%$query%')
+          .eq('is_active', true)
           .order('name');
 
-      return (response as List)
-          .map((json) => ParkingFacilityModel.fromJson(json))
+      final locations = (response as List)
+          .map((json) => ParkingLocationModel.fromJson(json))
           .toList();
+
+      return await _enrichLocationsWithSlotCounts(locations);
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
-  @override
-  Future<List<ParkingFacilityModel>> getRecentFacilities(String userId) async {
-    try {
-      final response = await supabaseClient
-          .from('recent_facilities')
-          .select('parking_facilities(*)')
-          .eq('user_id', userId)
-          .order('visited_at', ascending: false)
-          .limit(10);
-
-      return (response as List)
-          .map(
-            (json) => ParkingFacilityModel.fromJson(json['parking_facilities']),
-          )
-          .toList();
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
+  // ========== SPOTS ==========
 
   @override
-  Future<List<ParkingSlotModel>> getParkingSlots(String facilityId) async {
+  Future<List<ParkingSlotModel>> getParkingSpots() async {
     try {
       final response = await supabaseClient
-          .from('parking_slots')
+          .from('parking_spots')
           .select()
-          .eq('facility_id', facilityId)
-          .order('slot_number');
+          .order('spot_name');
 
       return (response as List)
           .map((json) => ParkingSlotModel.fromJson(json))
@@ -115,12 +178,37 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   }
 
   @override
-  Future<ParkingSlotModel> getParkingSlotById(String slotId) async {
+  Future<List<ParkingSlotModel>> getSpotsByLocation(int locationId) async {
+    try {
+      List<dynamic> response;
+
+      if (locationId == 0) {
+        // Default location - get all spots
+        response = await supabaseClient
+            .from('parking_spots')
+            .select()
+            .order('spot_name');
+      } else {
+        response = await supabaseClient
+            .from('parking_spots')
+            .select()
+            .eq('location_id', locationId)
+            .order('spot_name');
+      }
+
+      return response.map((json) => ParkingSlotModel.fromJson(json)).toList();
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<ParkingSlotModel> getParkingSpotById(int id) async {
     try {
       final response = await supabaseClient
-          .from('parking_slots')
+          .from('parking_spots')
           .select()
-          .eq('id', slotId)
+          .eq('id', id)
           .single();
 
       return ParkingSlotModel.fromJson(response);
@@ -130,117 +218,62 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   }
 
   @override
-  Future<ReservationModel> reserveSlot({
-    required String slotId,
-    required String facilityId,
-    required String userId,
-    required int durationMinutes,
-  }) async {
+  Future<List<ParkingSlotModel>> searchSpots(String query) async {
     try {
-      final now = DateTime.now();
-      final endTime = now.add(Duration(minutes: durationMinutes));
-
-      // Get slot and facility info
-      final slot = await getParkingSlotById(slotId);
-      final facility = await getParkingFacilityById(facilityId);
-
-      // Calculate total price
-      final hours = durationMinutes / 60;
-      final totalPrice = (facility.pricePerHour ?? 0) * hours;
-
-      // Create reservation
       final response = await supabaseClient
-          .from('reservations')
-          .insert({
-            'slot_id': slotId,
-            'facility_id': facilityId,
-            'user_id': userId,
-            'slot_number': slot.slotNumber,
-            'facility_name': facility.name,
-            'start_time': now.toIso8601String(),
-            'end_time': endTime.toIso8601String(),
-            'total_price': totalPrice,
-            'status': 'active',
-          })
+          .from('parking_spots')
           .select()
-          .single();
+          .ilike('spot_name', '%$query%')
+          .order('spot_name');
 
-      // Update slot status
-      await supabaseClient
-          .from('parking_slots')
-          .update({
-            'status': 'reserved',
-            'reserved_by': userId,
-            'reserved_until': endTime.toIso8601String(),
-          })
-          .eq('id', slotId);
-
-      // Update facility available slots
-      await supabaseClient
-          .from('parking_facilities')
-          .update({
-            'available_slots': facility.availableSlots - 1,
-            'reserved_slots': facility.reservedSlots + 1,
-          })
-          .eq('id', facilityId);
-
-      return ReservationModel.fromJson(response);
+      return (response as List)
+          .map((json) => ParkingSlotModel.fromJson(json))
+          .toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<void> cancelReservation(String reservationId) async {
+  Future<List<ParkingSlotModel>> getAvailableSpots() async {
     try {
-      // Get reservation
-      final reservation = await supabaseClient
-          .from('reservations')
+      final response = await supabaseClient
+          .from('parking_spots')
           .select()
-          .eq('id', reservationId)
-          .single();
+          .eq('is_occupied', false)
+          .order('spot_name');
 
-      // Update slot status
-      await supabaseClient
-          .from('parking_slots')
-          .update({
-            'status': 'available',
-            'reserved_by': null,
-            'reserved_until': null,
-          })
-          .eq('id', reservation['slot_id']);
-
-      // Update facility
-      final facility = await getParkingFacilityById(reservation['facility_id']);
-      await supabaseClient
-          .from('parking_facilities')
-          .update({
-            'available_slots': facility.availableSlots + 1,
-            'reserved_slots': facility.reservedSlots - 1,
-          })
-          .eq('id', reservation['facility_id']);
-
-      // Update reservation status
-      await supabaseClient
-          .from('reservations')
-          .update({'status': 'cancelled'})
-          .eq('id', reservationId);
+      return (response as List)
+          .map((json) => ParkingSlotModel.fromJson(json))
+          .toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<void> addToRecentFacilities({
-    required String userId,
-    required String facilityId,
-  }) async {
+  Future<List<ParkingSlotModel>> getAvailableSpotsByLocation(
+    int locationId,
+  ) async {
     try {
-      await supabaseClient.from('recent_facilities').upsert({
-        'user_id': userId,
-        'facility_id': facilityId,
-        'visited_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,facility_id');
+      List<dynamic> response;
+
+      if (locationId == 0) {
+        response = await supabaseClient
+            .from('parking_spots')
+            .select()
+            .eq('is_occupied', false)
+            .order('spot_name');
+      } else {
+        response = await supabaseClient
+            .from('parking_spots')
+            .select()
+            .eq('location_id', locationId)
+            .eq('is_occupied', false)
+            .order('spot_name');
+      }
+
+      return response.map((json) => ParkingSlotModel.fromJson(json)).toList();
     } catch (e) {
       throw ServerException(e.toString());
     }

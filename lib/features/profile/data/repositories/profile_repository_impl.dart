@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failure.dart';
-import '../../../parking/domain/entities/reservation.dart';
+import '../../../parking/domain/entities/parking_session.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../datasources/profile_remote_datasource.dart';
@@ -24,10 +24,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, List<Reservation>>> getUserReservations(String userId) async {
+  Future<Either<Failure, List<ParkingSession>>> getUserSessions(
+    String plateNumber,
+  ) async {
     try {
-      final reservations = await remoteDataSource.getUserReservations(userId);
-      return Right(reservations);
+      final sessions = await remoteDataSource.getUserSessions(plateNumber);
+      return Right(sessions);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

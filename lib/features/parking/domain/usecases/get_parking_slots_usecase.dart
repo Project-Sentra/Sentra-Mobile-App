@@ -4,13 +4,13 @@ import '../../../../core/usecases/usecase.dart';
 import '../entities/parking_slot.dart';
 import '../repositories/parking_repository.dart';
 
-class GetParkingSlotsUseCase implements UseCase<List<ParkingSlot>, String> {
+class GetAvailableSpotsUseCase implements UseCase<List<ParkingSlot>, NoParams> {
   final ParkingRepository repository;
 
-  GetParkingSlotsUseCase(this.repository);
+  GetAvailableSpotsUseCase(this.repository);
 
   @override
-  Future<Either<Failure, List<ParkingSlot>>> call(String facilityId) {
-    return repository.getParkingSlots(facilityId);
+  Future<Either<Failure, List<ParkingSlot>>> call(NoParams params) {
+    return repository.getAvailableSpots();
   }
 }

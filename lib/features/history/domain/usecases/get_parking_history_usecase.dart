@@ -5,13 +5,13 @@ import '../../../parking/domain/entities/parking_session.dart';
 import '../repositories/history_repository.dart';
 
 class GetParkingHistoryUseCase
-    implements UseCase<List<ParkingSession>, String> {
+    implements UseCase<List<ParkingSession>, NoParams> {
   final HistoryRepository repository;
 
   GetParkingHistoryUseCase(this.repository);
 
   @override
-  Future<Either<Failure, List<ParkingSession>>> call(String userId) {
-    return repository.getParkingHistory(userId);
+  Future<Either<Failure, List<ParkingSession>>> call(NoParams params) {
+    return repository.getParkingHistory();
   }
 }

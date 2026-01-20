@@ -1,34 +1,42 @@
-import '../../domain/entities/parking_facility.dart';
+import '../../domain/entities/parking_location.dart';
 
-class ParkingFacilityModel extends ParkingFacility {
-  const ParkingFacilityModel({
+class ParkingLocationModel extends ParkingLocation {
+  const ParkingLocationModel({
     required super.id,
     required super.name,
     super.address,
+    super.latitude,
+    super.longitude,
     super.pricePerHour,
     super.currency,
     super.imageUrl,
+    super.isActive,
     super.totalSlots,
     super.availableSlots,
-    super.reservedSlots,
-    super.latitude,
-    super.longitude,
+    super.occupiedSlots,
     super.createdAt,
   });
 
-  factory ParkingFacilityModel.fromJson(Map<String, dynamic> json) {
-    return ParkingFacilityModel(
-      id: json['id'] as String,
+  factory ParkingLocationModel.fromJson(Map<String, dynamic> json) {
+    return ParkingLocationModel(
+      id: json['id'] as int,
       name: json['name'] as String,
       address: json['address'] as String?,
-      pricePerHour: (json['price_per_hour'] as num?)?.toDouble(),
+      latitude: json['latitude'] != null
+          ? double.tryParse(json['latitude'].toString())
+          : null,
+      longitude: json['longitude'] != null
+          ? double.tryParse(json['longitude'].toString())
+          : null,
+      pricePerHour: json['price_per_hour'] != null
+          ? double.parse(json['price_per_hour'].toString())
+          : 100,
       currency: json['currency'] as String? ?? 'LKR',
       imageUrl: json['image_url'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
       totalSlots: json['total_slots'] as int? ?? 0,
       availableSlots: json['available_slots'] as int? ?? 0,
-      reservedSlots: json['reserved_slots'] as int? ?? 0,
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
+      occupiedSlots: json['occupied_slots'] as int? ?? 0,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -40,14 +48,15 @@ class ParkingFacilityModel extends ParkingFacility {
       'id': id,
       'name': name,
       'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
       'price_per_hour': pricePerHour,
       'currency': currency,
       'image_url': imageUrl,
+      'is_active': isActive,
       'total_slots': totalSlots,
       'available_slots': availableSlots,
-      'reserved_slots': reservedSlots,
-      'latitude': latitude,
-      'longitude': longitude,
+      'occupied_slots': occupiedSlots,
       'created_at': createdAt?.toIso8601String(),
     };
   }

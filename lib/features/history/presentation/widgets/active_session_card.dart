@@ -67,7 +67,7 @@ class ActiveSessionCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  session.licensePlate,
+                  session.plateNumber,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -78,7 +78,7 @@ class ActiveSessionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Facility info
+            // Spot info
             Row(
               children: [
                 Container(
@@ -100,7 +100,7 @@ class ActiveSessionCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Facility ID: ${session.facilityId}',
+                        'Spot: ${session.spotName}',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -109,14 +109,13 @@ class ActiveSessionCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (session.slotId != null)
-                        Text(
-                          'Slot: ${session.slotId}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
+                      Text(
+                        'Vehicle: ${session.plateNumber}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -218,9 +217,9 @@ class ActiveSessionCard extends StatelessWidget {
   }
 
   String _calculateEstCost(Duration duration) {
-    // Assume RM5 per hour for estimation
+    // Assume LKR 100 per hour for estimation
     final hours = duration.inMinutes / 60;
-    final cost = hours * 5;
-    return 'RM ${cost.toStringAsFixed(2)}';
+    final cost = hours * 100;
+    return 'LKR ${cost.toStringAsFixed(0)}';
   }
 }

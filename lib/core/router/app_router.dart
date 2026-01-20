@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,12 +6,8 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/sign_in_page.dart';
 import '../../features/auth/presentation/pages/sign_up_page.dart';
 import '../../features/parking/presentation/pages/parking_facilities_page.dart';
-import '../../features/parking/presentation/pages/facility_detail_page.dart';
-import '../../features/parking/presentation/pages/slot_detail_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/parking/domain/entities/parking_facility.dart';
-import '../../features/parking/domain/entities/parking_slot.dart';
 import '../../features/vehicles/presentation/pages/vehicles_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 
@@ -53,27 +48,6 @@ class AppRouter {
           GoRoute(
             path: '/facilities',
             builder: (context, state) => const ParkingFacilitiesPage(),
-            routes: [
-              GoRoute(
-                path: ':facilityId',
-                builder: (context, state) {
-                  final facility = state.extra as ParkingFacility;
-                  return FacilityDetailPage(facility: facility);
-                },
-                routes: [
-                  GoRoute(
-                    path: 'slot/:slotId',
-                    builder: (context, state) {
-                      final extra = state.extra as Map<String, dynamic>;
-                      return SlotDetailPage(
-                        slot: extra['slot'] as ParkingSlot,
-                        facility: extra['facility'] as ParkingFacility,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
           ),
           GoRoute(
             path: '/vehicles',

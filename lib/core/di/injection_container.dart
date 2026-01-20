@@ -17,20 +17,18 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/parking/data/datasources/parking_remote_datasource.dart';
 import '../../features/parking/data/repositories/parking_repository_impl.dart';
 import '../../features/parking/domain/repositories/parking_repository.dart';
-import '../../features/parking/domain/usecases/get_parking_facilities_usecase.dart';
-import '../../features/parking/domain/usecases/get_parking_slots_usecase.dart';
-import '../../features/parking/domain/usecases/reserve_slot_usecase.dart';
+import '../../features/parking/domain/usecases/get_parking_locations_usecase.dart';
+import '../../features/parking/domain/usecases/get_spots_by_location_usecase.dart';
 import '../../features/parking/domain/usecases/search_facilities_usecase.dart';
-import '../../features/parking/domain/usecases/get_recent_facilities_usecase.dart';
 import '../../features/parking/presentation/bloc/parking_bloc.dart';
-import '../../features/parking/presentation/bloc/slot_bloc.dart';
 
 // Profile feature
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_user_profile_usecase.dart';
-import '../../features/profile/domain/usecases/get_user_reservations_usecase.dart';
+import '../../features/profile/domain/usecases/get_user_reservations_usecase.dart'
+    show GetUserSessionsUseCase;
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 
 // Vehicles feature
@@ -63,8 +61,6 @@ import '../../features/history/data/repositories/history_repository_impl.dart';
 import '../../features/history/domain/repositories/history_repository.dart';
 import '../../features/history/domain/usecases/get_parking_history_usecase.dart';
 import '../../features/history/domain/usecases/get_active_sessions_usecase.dart';
-import '../../features/history/domain/usecases/get_active_reservations_usecase.dart';
-import '../../features/history/domain/usecases/get_receipts_usecase.dart';
 import '../../features/history/presentation/bloc/history_bloc.dart';
 
 final sl = GetIt.instance;
@@ -114,23 +110,17 @@ Future<void> initializeDependencies() async {
   );
 
   // Use cases
-  sl.registerLazySingleton(() => GetParkingFacilitiesUseCase(sl()));
-  sl.registerLazySingleton(() => GetParkingSlotsUseCase(sl()));
-  sl.registerLazySingleton(() => ReserveSlotUseCase(sl()));
-  sl.registerLazySingleton(() => SearchFacilitiesUseCase(sl()));
-  sl.registerLazySingleton(() => GetRecentFacilitiesUseCase(sl()));
+  sl.registerLazySingleton(() => GetParkingLocationsUseCase(sl()));
+  sl.registerLazySingleton(() => GetSpotsByLocationUseCase(sl()));
+  sl.registerLazySingleton(() => SearchSpotsUseCase(sl()));
 
   // Bloc
   sl.registerFactory(
     () => ParkingBloc(
-      getParkingFacilitiesUseCase: sl(),
-      searchFacilitiesUseCase: sl(),
-      getRecentFacilitiesUseCase: sl(),
+      getParkingLocationsUseCase: sl(),
+      getSpotsByLocationUseCase: sl(),
+      searchSpotsUseCase: sl(),
     ),
-  );
-
-  sl.registerFactory(
-    () => SlotBloc(getParkingSlotsUseCase: sl(), reserveSlotUseCase: sl()),
   );
 
   // ========== Profile Feature ==========
@@ -146,14 +136,12 @@ Future<void> initializeDependencies() async {
 
   // Use cases
   sl.registerLazySingleton(() => GetUserProfileUseCase(sl()));
-  sl.registerLazySingleton(() => GetUserReservationsUseCase(sl()));
+  sl.registerLazySingleton(() => GetUserSessionsUseCase(sl()));
 
   // Bloc
   sl.registerFactory(
-    () => ProfileBloc(
-      getUserProfileUseCase: sl(),
-      getUserReservationsUseCase: sl(),
-    ),
+    () =>
+        ProfileBloc(getUserProfileUseCase: sl(), getUserSessionsUseCase: sl()),
   );
 
   // ========== Vehicles Feature ==========
@@ -226,16 +214,12 @@ Future<void> initializeDependencies() async {
   // Use cases
   sl.registerLazySingleton(() => GetParkingHistoryUseCase(sl()));
   sl.registerLazySingleton(() => GetActiveSessionsUseCase(sl()));
-  sl.registerLazySingleton(() => GetActiveReservationsUseCase(sl()));
-  sl.registerLazySingleton(() => GetReceiptsUseCase(sl()));
 
   // Bloc
   sl.registerFactory(
     () => HistoryBloc(
       getParkingHistoryUseCase: sl(),
       getActiveSessionsUseCase: sl(),
-      getActiveReservationsUseCase: sl(),
-      getReceiptsUseCase: sl(),
     ),
   );
 }

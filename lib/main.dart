@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/di/injection_container.dart' as di;
-import 'core/env/supabase.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
@@ -20,8 +19,8 @@ void main() async {
 
   // Initialize Supabase
   await Supabase.initialize(
-    url: 'https://fouccavizcgbhvbemhov.supabase.co',
-    anonKey: 'sb_publishable_KdTPl9zNz6WBNCSfhTFKZA_r2x_PKqd',
+    url: 'https://zjbzxbymneuouuhenown.supabase.co',
+    anonKey: 'sb_publishable_dcAdQIkVJygdHSi7FG67jQ_RqRpI__L',
   );
 
   // Initialize dependencies

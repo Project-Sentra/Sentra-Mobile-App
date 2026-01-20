@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
-import '../../domain/entities/parking_facility.dart';
+import '../../domain/entities/parking_location.dart';
+import '../../domain/entities/parking_slot.dart';
 import '../bloc/parking_bloc.dart';
 import '../bloc/parking_event.dart';
 import '../bloc/parking_state.dart';
-import '../widgets/facility_card.dart';
 
 class ParkingFacilitiesPage extends StatefulWidget {
   const ParkingFacilitiesPage({super.key});
@@ -46,223 +44,482 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
     return BlocProvider(
       create: (_) {
         final bloc = sl<ParkingBloc>();
-        bloc.add(const FetchParkingFacilities());
-        final userId = Supabase.instance.client.auth.currentUser?.id;
-        if (userId != null) {
-          bloc.add(FetchRecentFacilities(userId));
-        }
+        bloc.add(const FetchParkingLocations());
         return bloc;
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const AppHeader(title: 'Parking Facilities'),
-              const SizedBox(height: 16),
-              // Search field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: BlocBuilder<ParkingBloc, ParkingState>(
-                  builder: (context, state) {
-                    return _buildSearchField(context);
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Content
-              Expanded(
-                child: BlocBuilder<ParkingBloc, ParkingState>(
-                  builder: (context, state) {
-                    if (state.status == ParkingStatus.loading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      );
-                    }
-
-                    if (state.status == ParkingStatus.error) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Error loading facilities',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              state.errorMessage ?? '',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                context.read<ParkingBloc>().add(
-                                  const FetchParkingFacilities(),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.textDark,
-                              ),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    // Show search results if searching
-                    if (_searchController.text.isNotEmpty) {
-                      return _buildFacilityList(
-                        state.searchResults,
-                        'No facilities found',
-                      );
-                    }
-
-                    // Show recent facilities and all facilities
-                    return SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (state.recentFacilities.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'RECENTS',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...state.recentFacilities.map(
-                              (facility) => Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 6,
-                                ),
-                                child: FacilityCard(
-                                  facility: facility,
-                                  onTap: () =>
-                                      _navigateToFacility(context, facility),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                          if (state.facilities.isNotEmpty &&
-                              state.recentFacilities.isEmpty) ...[
-                            ...state.facilities.map(
-                              (facility) => Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 6,
-                                ),
-                                child: FacilityCard(
-                                  facility: facility,
-                                  onTap: () =>
-                                      _navigateToFacility(context, facility),
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          child: BlocBuilder<ParkingBloc, ParkingState>(
+            builder: (context, state) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  _buildHeader(context, state),
+                  const SizedBox(height: 16),
+                  Expanded(child: _buildContent(context, state)),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSearchField(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (query) {
-          context.read<ParkingBloc>().add(SearchFacilities(query));
-        },
-        style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textDark),
-        decoration: InputDecoration(
-          hintText: 'search parking facilities',
-          hintStyle: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.textHint,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.textHint,
-            size: 22,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+  Widget _buildHeader(BuildContext context, ParkingState state) {
+    if (state.isViewingSpots) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+              onPressed: () {
+                context.read<ParkingBloc>().add(const BackToLocations());
+              },
+            ),
+            Expanded(
+              child: Text(
+                state.selectedLocation?.name ?? 'Parking Slots',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
         ),
+      );
+    }
+    return const AppHeader(title: 'Parking Locations');
+  }
+
+  Widget _buildContent(BuildContext context, ParkingState state) {
+    if (state.status == ParkingStatus.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (state.status == ParkingStatus.error) {
+      return _buildErrorView(context, state);
+    }
+
+    // Show slots view if a location is selected
+    if (state.isViewingSpots) {
+      return _buildSlotsView(context, state);
+    }
+
+    // Show locations view
+    return _buildLocationsView(context, state);
+  }
+
+  Widget _buildErrorView(BuildContext context, ParkingState state) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading data',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              state.errorMessage ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              context.read<ParkingBloc>().add(const FetchParkingLocations());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textDark,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFacilityList(
-    List<ParkingFacility> facilities,
-    String emptyMessage,
-  ) {
-    if (facilities.isEmpty) {
+  // ========== LOCATIONS VIEW ==========
+  Widget _buildLocationsView(BuildContext context, ParkingState state) {
+    if (state.locations.isEmpty) {
       return Center(
-        child: Text(
-          emptyMessage,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off, color: AppColors.textSecondary, size: 64),
+            const SizedBox(height: 16),
+            Text(
+              'No parking locations available',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: facilities.length,
+      itemCount: state.locations.length,
       itemBuilder: (context, index) {
-        final facility = facilities[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: FacilityCard(
-            facility: facility,
-            onTap: () => _navigateToFacility(context, facility),
-          ),
-        );
+        final location = state.locations[index];
+        return _buildLocationCard(context, location);
       },
     );
   }
 
-  void _navigateToFacility(BuildContext context, ParkingFacility facility) {
-    context.push('/facilities/${facility.id}', extra: facility);
+  Widget _buildLocationCard(BuildContext context, ParkingLocation location) {
+    final availabilityColor = location.availableSlots > 0
+        ? Colors.green
+        : Colors.red;
+
+    return GestureDetector(
+      onTap: () {
+        context.read<ParkingBloc>().add(SelectLocation(location));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardDark, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.local_parking,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        location.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (location.address != null)
+                        Text(
+                          location.address!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildLocationStat(
+                  'Available',
+                  '${location.availableSlots}',
+                  Colors.green,
+                ),
+                const SizedBox(width: 12),
+                _buildLocationStat(
+                  'Occupied',
+                  '${location.occupiedSlots}',
+                  Colors.red,
+                ),
+                const SizedBox(width: 12),
+                _buildLocationStat(
+                  'Total',
+                  '${location.totalSlots}',
+                  AppColors.primary,
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: availabilityColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    location.formattedPrice,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: availabilityColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ========== SLOTS VIEW ==========
+  Widget _buildSlotsView(BuildContext context, ParkingState state) {
+    if (state.status == ParkingStatus.loadingSpots) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    return Column(
+      children: [
+        // Stats row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildStatChip('Available', state.availableCount, Colors.green),
+              const SizedBox(width: 12),
+              _buildStatChip('Occupied', state.occupiedCount, Colors.red),
+              if (state.reservedCount > 0) ...[
+                const SizedBox(width: 12),
+                _buildStatChip('Reserved', state.reservedCount, Colors.orange),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Slots grid
+        Expanded(
+          child: state.spots.isEmpty
+              ? Center(
+                  child: Text(
+                    'No slots available at this location',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              : _buildSpotGrid(state.spots),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatChip(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label: $count',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpotGrid(List<ParkingSlot> spots) {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: spots.length,
+      itemBuilder: (context, index) {
+        final spot = spots[index];
+        return _buildSpotCard(spot);
+      },
+    );
+  }
+
+  Widget _buildSpotCard(ParkingSlot spot) {
+    Color color;
+    IconData icon;
+    String statusText;
+
+    switch (spot.status) {
+      case SlotStatus.available:
+        color = Colors.green;
+        icon = Icons.local_parking;
+        statusText = 'Available';
+        break;
+      case SlotStatus.occupied:
+        color = Colors.red;
+        icon = Icons.directions_car;
+        statusText = 'Occupied';
+        break;
+      case SlotStatus.reserved:
+        color = Colors.orange;
+        icon = Icons.bookmark;
+        statusText = 'Reserved';
+        break;
+      case SlotStatus.disabled:
+        color = Colors.grey;
+        icon = Icons.block;
+        statusText = 'Disabled';
+        break;
+    }
+
+    return GestureDetector(
+      onTap: spot.isAvailable
+          ? () {
+              // TODO: Show booking dialog
+              _showBookingDialog(context, spot);
+            }
+          : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              spot.slotName,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              statusText,
+              style: GoogleFonts.poppins(fontSize: 10, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBookingDialog(BuildContext context, ParkingSlot spot) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: Text(
+          'Book Slot ${spot.slotName}',
+          style: GoogleFonts.poppins(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Would you like to pre-book this parking slot?',
+          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement booking
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Booking feature coming soon!',
+                    style: GoogleFonts.poppins(),
+                  ),
+                  backgroundColor: AppColors.primary,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textDark,
+            ),
+            child: const Text('Book Now'),
+          ),
+        ],
+      ),
+    );
   }
 }

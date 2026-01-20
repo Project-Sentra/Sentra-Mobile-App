@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
-import '../../../parking/domain/entities/reservation.dart';
 import '../bloc/history_bloc.dart';
 import '../bloc/history_event.dart';
 import '../bloc/history_state.dart';
@@ -45,15 +43,11 @@ class _HistoryPageState extends State<HistoryPage>
 
   @override
   Widget build(BuildContext context) {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-
     return BlocProvider(
       create: (_) {
         final bloc = sl<HistoryBloc>();
-        if (userId != null) {
-          bloc.add(FetchActiveSessions(userId));
-          bloc.add(FetchParkingHistory(userId));
-        }
+        bloc.add(const FetchActiveSessions());
+        bloc.add(const FetchParkingHistory());
         return bloc;
       },
       child: Scaffold(
@@ -71,10 +65,7 @@ class _HistoryPageState extends State<HistoryPage>
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  children: [
-                    _ActiveTab(userId: userId),
-                    _HistoryTab(userId: userId),
-                  ],
+                  children: const [_ActiveTab(), _HistoryTab()],
                 ),
               ),
             ],
@@ -120,9 +111,7 @@ class _HistoryPageState extends State<HistoryPage>
 }
 
 class _ActiveTab extends StatelessWidget {
-  final String? userId;
-
-  const _ActiveTab({this.userId});
+  const _ActiveTab();
 
   @override
   Widget build(BuildContext context) {
@@ -135,38 +124,22 @@ class _ActiveTab extends StatelessWidget {
         }
 
         final activeSessions = state.activeSessions;
-        final activeReservations = state.activeReservations;
 
-        if (activeSessions.isEmpty && activeReservations.isEmpty) {
+        if (activeSessions.isEmpty) {
           return _buildEmptyState();
         }
 
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
-            // Active sessions section
-            if (activeSessions.isNotEmpty) ...[
-              _buildSectionHeader('Active Parking'),
-              const SizedBox(height: 12),
-              ...activeSessions.map(
-                (session) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ActiveSessionCard(session: session),
-                ),
+            _buildSectionHeader('Active Parking'),
+            const SizedBox(height: 12),
+            ...activeSessions.map(
+              (session) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ActiveSessionCard(session: session),
               ),
-              const SizedBox(height: 16),
-            ],
-            // Active reservations section
-            if (activeReservations.isNotEmpty) ...[
-              _buildSectionHeader('Upcoming Reservations'),
-              const SizedBox(height: 12),
-              ...activeReservations.map(
-                (reservation) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildReservationCard(reservation),
-                ),
-              ),
-            ],
+            ),
           ],
         );
       },
@@ -215,89 +188,10 @@ class _ActiveTab extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildReservationCard(Reservation reservation) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'RESERVED',
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                reservation.slotNumber,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            reservation.facilityName,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Text(
-            'Slot: ${reservation.slotNumber}',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 16, color: AppColors.primary),
-              const SizedBox(width: 4),
-              Text(
-                '${_formatDateTime(reservation.startTime)} - ${_formatDateTime(reservation.endTime)}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 class _HistoryTab extends StatelessWidget {
-  final String? userId;
-
-  const _HistoryTab({this.userId});
+  const _HistoryTab();
 
   @override
   Widget build(BuildContext context) {

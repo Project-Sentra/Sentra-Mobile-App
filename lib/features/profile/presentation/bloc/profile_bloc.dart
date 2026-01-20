@@ -6,14 +6,14 @@ import 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final GetUserProfileUseCase getUserProfileUseCase;
-  final GetUserReservationsUseCase getUserReservationsUseCase;
+  final GetUserSessionsUseCase getUserSessionsUseCase;
 
   ProfileBloc({
     required this.getUserProfileUseCase,
-    required this.getUserReservationsUseCase,
+    required this.getUserSessionsUseCase,
   }) : super(const ProfileState()) {
     on<FetchUserProfile>(_onFetchProfile);
-    on<FetchUserReservations>(_onFetchReservations);
+    on<FetchUserSessions>(_onFetchSessions);
   }
 
   Future<void> _onFetchProfile(
@@ -25,28 +25,26 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final result = await getUserProfileUseCase(event.userId);
 
     result.fold(
-      (failure) => emit(state.copyWith(
-        status: ProfileStatus.error,
-        errorMessage: failure.message,
-      )),
-      (profile) => emit(state.copyWith(
-        status: ProfileStatus.loaded,
-        profile: profile,
-      )),
+      (failure) => emit(
+        state.copyWith(
+          status: ProfileStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (profile) =>
+          emit(state.copyWith(status: ProfileStatus.loaded, profile: profile)),
     );
   }
 
-  Future<void> _onFetchReservations(
-    FetchUserReservations event,
+  Future<void> _onFetchSessions(
+    FetchUserSessions event,
     Emitter<ProfileState> emit,
   ) async {
-    final result = await getUserReservationsUseCase(event.userId);
+    final result = await getUserSessionsUseCase(event.plateNumber);
 
     result.fold(
       (failure) => null, // Silently fail
-      (reservations) => emit(state.copyWith(
-        reservations: reservations,
-      )),
+      (sessions) => emit(state.copyWith(sessions: sessions)),
     );
   }
 }

@@ -11,6 +11,8 @@ class HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompleted = session.isCompleted;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -44,7 +46,7 @@ class HistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        session.facilityName,
+                        session.spotName,
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -64,7 +66,7 @@ class HistoryCard extends StatelessWidget {
                   ),
                 ),
                 // Status badge
-                _buildStatusBadge(session.status),
+                _buildStatusBadge(isCompleted),
               ],
             ),
             const SizedBox(height: 16),
@@ -91,7 +93,7 @@ class HistoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          session.licensePlate,
+                          session.plateNumber,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -116,7 +118,7 @@ class HistoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _formatDuration(session.duration),
+                          session.formattedDuration,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -140,9 +142,7 @@ class HistoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          session.totalAmount != null
-                              ? 'RM ${session.totalAmount!.toStringAsFixed(2)}'
-                              : '-',
+                          session.formattedAmount,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -166,7 +166,7 @@ class HistoryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${_formatTime(session.entryTime)} - ${session.exitTime != null ? _formatTime(session.exitTime!) : 'N/A'}',
+                  '${_formatTime(session.entryTime)} - ${session.exitTime != null ? _formatTime(session.exitTime!) : 'Ongoing'}',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -180,28 +180,12 @@ class HistoryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(ParkingSessionStatus status) {
-    Color bgColor;
-    Color textColor;
-    String statusText;
-
-    switch (status) {
-      case ParkingSessionStatus.completed:
-        bgColor = AppColors.success.withValues(alpha: 0.15);
-        textColor = AppColors.success;
-        statusText = 'COMPLETED';
-        break;
-      case ParkingSessionStatus.active:
-        bgColor = AppColors.primary.withValues(alpha: 0.15);
-        textColor = AppColors.primary;
-        statusText = 'ACTIVE';
-        break;
-      case ParkingSessionStatus.cancelled:
-        bgColor = AppColors.error.withValues(alpha: 0.15);
-        textColor = AppColors.error;
-        statusText = 'CANCELLED';
-        break;
-    }
+  Widget _buildStatusBadge(bool isCompleted) {
+    final bgColor = isCompleted
+        ? AppColors.success.withValues(alpha: 0.15)
+        : AppColors.primary.withValues(alpha: 0.15);
+    final textColor = isCompleted ? AppColors.success : AppColors.primary;
+    final statusText = isCompleted ? 'COMPLETED' : 'ACTIVE';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -240,16 +224,5 @@ class HistoryCard extends StatelessWidget {
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _formatDuration(double? hours) {
-    if (hours == null) return '-';
-    final totalMinutes = (hours * 60).round();
-    final h = totalMinutes ~/ 60;
-    final m = totalMinutes % 60;
-    if (h > 0) {
-      return '${h}h ${m}m';
-    }
-    return '${m}m';
   }
 }

@@ -1,9 +1,8 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failure.dart';
-import '../../domain/entities/parking_facility.dart';
+import '../../domain/entities/parking_location.dart';
 import '../../domain/entities/parking_slot.dart';
-import '../../domain/entities/reservation.dart';
 import '../../domain/repositories/parking_repository.dart';
 import '../datasources/parking_remote_datasource.dart';
 
@@ -12,11 +11,13 @@ class ParkingRepositoryImpl implements ParkingRepository {
 
   ParkingRepositoryImpl(this.remoteDataSource);
 
+  // ========== LOCATIONS ==========
+
   @override
-  Future<Either<Failure, List<ParkingFacility>>> getParkingFacilities() async {
+  Future<Either<Failure, List<ParkingLocation>>> getParkingLocations() async {
     try {
-      final facilities = await remoteDataSource.getParkingFacilities();
-      return Right(facilities);
+      final locations = await remoteDataSource.getParkingLocations();
+      return Right(locations);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -25,12 +26,12 @@ class ParkingRepositoryImpl implements ParkingRepository {
   }
 
   @override
-  Future<Either<Failure, ParkingFacility>> getParkingFacilityById(
-    String id,
+  Future<Either<Failure, ParkingLocation>> getParkingLocationById(
+    int id,
   ) async {
     try {
-      final facility = await remoteDataSource.getParkingFacilityById(id);
-      return Right(facility);
+      final location = await remoteDataSource.getParkingLocationById(id);
+      return Right(location);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -39,12 +40,26 @@ class ParkingRepositoryImpl implements ParkingRepository {
   }
 
   @override
-  Future<Either<Failure, List<ParkingFacility>>> searchFacilities(
+  Future<Either<Failure, List<ParkingLocation>>> searchLocations(
     String query,
   ) async {
     try {
-      final facilities = await remoteDataSource.searchFacilities(query);
-      return Right(facilities);
+      final locations = await remoteDataSource.searchLocations(query);
+      return Right(locations);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  // ========== SPOTS ==========
+
+  @override
+  Future<Either<Failure, List<ParkingSlot>>> getParkingSpots() async {
+    try {
+      final spots = await remoteDataSource.getParkingSpots();
+      return Right(spots);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -53,12 +68,12 @@ class ParkingRepositoryImpl implements ParkingRepository {
   }
 
   @override
-  Future<Either<Failure, List<ParkingFacility>>> getRecentFacilities(
-    String userId,
+  Future<Either<Failure, List<ParkingSlot>>> getSpotsByLocation(
+    int locationId,
   ) async {
     try {
-      final facilities = await remoteDataSource.getRecentFacilities(userId);
-      return Right(facilities);
+      final spots = await remoteDataSource.getSpotsByLocation(locationId);
+      return Right(spots);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -67,76 +82,50 @@ class ParkingRepositoryImpl implements ParkingRepository {
   }
 
   @override
-  Future<Either<Failure, List<ParkingSlot>>> getParkingSlots(
-    String facilityId,
+  Future<Either<Failure, ParkingSlot>> getParkingSpotById(int id) async {
+    try {
+      final spot = await remoteDataSource.getParkingSpotById(id);
+      return Right(spot);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ParkingSlot>>> searchSpots(String query) async {
+    try {
+      final spots = await remoteDataSource.searchSpots(query);
+      return Right(spots);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ParkingSlot>>> getAvailableSpots() async {
+    try {
+      final spots = await remoteDataSource.getAvailableSpots();
+      return Right(spots);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ParkingSlot>>> getAvailableSpotsByLocation(
+    int locationId,
   ) async {
     try {
-      final slots = await remoteDataSource.getParkingSlots(facilityId);
-      return Right(slots);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, ParkingSlot>> getParkingSlotById(String slotId) async {
-    try {
-      final slot = await remoteDataSource.getParkingSlotById(slotId);
-      return Right(slot);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Reservation>> reserveSlot({
-    required String slotId,
-    required String facilityId,
-    required String userId,
-    required int durationMinutes,
-  }) async {
-    try {
-      final reservation = await remoteDataSource.reserveSlot(
-        slotId: slotId,
-        facilityId: facilityId,
-        userId: userId,
-        durationMinutes: durationMinutes,
+      final spots = await remoteDataSource.getAvailableSpotsByLocation(
+        locationId,
       );
-      return Right(reservation);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> cancelReservation(String reservationId) async {
-    try {
-      await remoteDataSource.cancelReservation(reservationId);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> addToRecentFacilities({
-    required String userId,
-    required String facilityId,
-  }) async {
-    try {
-      await remoteDataSource.addToRecentFacilities(
-        userId: userId,
-        facilityId: facilityId,
-      );
-      return const Right(null);
+      return Right(spots);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
