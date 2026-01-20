@@ -56,6 +56,16 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   ) async {
     final enrichedLocations = <ParkingLocationModel>[];
 
+    // Get all active reservations to include reserved spots as occupied
+    final activeReservations = await supabaseClient
+        .from('reservations')
+        .select('spot_id')
+        .eq('status', 'active');
+
+    final reservedSpotIds = (activeReservations as List)
+        .map((r) => r['spot_id'])
+        .toSet();
+
     for (final location in locations) {
       try {
         final spotsResponse = await supabaseClient
@@ -65,8 +75,13 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
 
         final spots = spotsResponse as List;
         final totalSlots = spots.length;
+        // Count spots that are either occupied OR have active reservations
         final availableSlots = spots
-            .where((s) => s['is_occupied'] == false)
+            .where(
+              (s) =>
+                  s['is_occupied'] == false &&
+                  !reservedSpotIds.contains(s['id']),
+            )
             .length;
         final occupiedSlots = totalSlots - availableSlots;
 
@@ -101,9 +116,24 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
         .from('parking_spots')
         .select('id, is_occupied');
 
+    // Get active reservations
+    final activeReservations = await supabaseClient
+        .from('reservations')
+        .select('spot_id')
+        .eq('status', 'active');
+
+    final reservedSpotIds = (activeReservations as List)
+        .map((r) => r['spot_id'])
+        .toSet();
+
     final spots = spotsResponse as List;
     final totalSlots = spots.length;
-    final availableSlots = spots.where((s) => s['is_occupied'] == false).length;
+    final availableSlots = spots
+        .where(
+          (s) =>
+              s['is_occupied'] == false && !reservedSpotIds.contains(s['id']),
+        )
+        .length;
 
     return ParkingLocationModel(
       id: 0,
@@ -196,7 +226,27 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
             .order('spot_name');
       }
 
-      return response.map((json) => ParkingSlotModel.fromJson(json)).toList();
+      // Get active reservations to mark spots as reserved
+      final activeReservations = await supabaseClient
+          .from('reservations')
+          .select('spot_id')
+          .eq('status', 'active');
+
+      final reservedSpotIds = (activeReservations as List)
+          .map((r) => r['spot_id'])
+          .toSet();
+
+      return response.map((json) {
+        final spotId = json['id'];
+        final isReserved = reservedSpotIds.contains(spotId);
+
+        // If spot is reserved, mark it as occupied
+        if (isReserved) {
+          json['is_occupied'] = true;
+        }
+
+        return ParkingSlotModel.fromJson(json);
+      }).toList();
     } catch (e) {
       throw ServerException(e.toString());
     }

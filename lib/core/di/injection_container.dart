@@ -63,6 +63,17 @@ import '../../features/history/domain/usecases/get_parking_history_usecase.dart'
 import '../../features/history/domain/usecases/get_active_sessions_usecase.dart';
 import '../../features/history/presentation/bloc/history_bloc.dart';
 
+// Booking feature
+import '../../features/booking/data/datasources/booking_remote_datasource.dart';
+import '../../features/booking/data/datasources/booking_remote_datasource_impl.dart';
+import '../../features/booking/data/repositories/booking_repository_impl.dart';
+import '../../features/booking/domain/repositories/booking_repository.dart';
+import '../../features/booking/domain/usecases/create_reservation_usecase.dart';
+import '../../features/booking/domain/usecases/get_user_reservations_usecase.dart';
+import '../../features/booking/domain/usecases/get_active_reservations_usecase.dart';
+import '../../features/booking/domain/usecases/cancel_reservation_usecase.dart';
+import '../../features/booking/presentation/bloc/booking_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -220,6 +231,33 @@ Future<void> initializeDependencies() async {
     () => HistoryBloc(
       getParkingHistoryUseCase: sl(),
       getActiveSessionsUseCase: sl(),
+    ),
+  );
+
+  // ========== Booking Feature ==========
+  // Data sources
+  sl.registerLazySingleton<BookingRemoteDataSource>(
+    () => BookingRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<BookingRepository>(
+    () => BookingRepositoryImpl(sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => CreateReservationUseCase(sl()));
+  sl.registerLazySingleton(() => GetUserReservationsUseCase(sl()));
+  sl.registerLazySingleton(() => GetActiveReservationsUseCase(sl()));
+  sl.registerLazySingleton(() => CancelReservationUseCase(sl()));
+
+  // Bloc
+  sl.registerFactory(
+    () => BookingBloc(
+      createReservationUseCase: sl(),
+      getUserReservationsUseCase: sl(),
+      getActiveReservationsUseCase: sl(),
+      cancelReservationUseCase: sl(),
     ),
   );
 }

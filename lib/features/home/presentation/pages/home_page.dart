@@ -43,9 +43,9 @@ class HomePage extends StatelessWidget {
             ),
             _buildNavItem(
               context,
-              icon: Icons.history,
-              path: '/history',
-              isSelected: _isSelected(context, '/history'),
+              icon: Icons.calendar_today,
+              path: '/bookings',
+              isSelected: _isSelected(context, '/bookings'),
             ),
             _buildNavItem(
               context,
