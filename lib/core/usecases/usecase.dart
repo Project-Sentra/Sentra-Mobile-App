@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:sentra_mobile/core/errors/errors.dart';
-// import 'failure.dart';
+import '../errors/errors.dart';
 
 abstract class UseCase<Type, Params> {
   Future<Either<Failure, Type>> call(Params params);

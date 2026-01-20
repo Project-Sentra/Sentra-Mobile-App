@@ -1,11 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -14,8 +14,25 @@ import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +63,9 @@ class ProfilePage extends StatelessWidget {
           body: SafeArea(
             child: Column(
               children: [
+                const SizedBox(height: 8),
                 const AppHeader(title: 'Profile'),
+                const SizedBox(height: 24),
                 Expanded(
                   child: BlocBuilder<ProfileBloc, ProfileState>(
                     builder: (context, state) {
@@ -65,7 +84,10 @@ class ProfilePage extends StatelessWidget {
                             children: [
                               Text(
                                 'Error loading profile',
-                                style: AppTextStyles.bodyLarge,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               ElevatedButton(
@@ -76,6 +98,10 @@ class ProfilePage extends StatelessWidget {
                                     );
                                   }
                                 },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.textDark,
+                                ),
                                 child: const Text('Retry'),
                               ),
                             ],
@@ -86,109 +112,12 @@ class ProfilePage extends StatelessWidget {
                       final profile = state.profile;
 
                       return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            // Profile card with circular progress
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  // Circular progress avatar
-                                  SizedBox(
-                                    width: 80,
-                                    height: 80,
-                                    child: Stack(
-                                      children: [
-                                        CustomPaint(
-                                          size: const Size(80, 80),
-                                          painter: CircularProgressPainter(
-                                            progress:
-                                                profile?.completionPercentage ??
-                                                0.5,
-                                            progressColor: AppColors.primary,
-                                            backgroundColor: AppColors
-                                                .textSecondary
-                                                .withValues(alpha: 0.3),
-                                            strokeWidth: 4,
-                                          ),
-                                        ),
-                                        Center(
-                                          child: CircleAvatar(
-                                            radius: 32,
-                                            backgroundColor:
-                                                AppColors.backgroundLight,
-                                            backgroundImage:
-                                                profile?.avatarUrl != null
-                                                ? NetworkImage(
-                                                    profile!.avatarUrl!,
-                                                  )
-                                                : null,
-                                            child: profile?.avatarUrl == null
-                                                ? Icon(
-                                                    Icons.person,
-                                                    size: 32,
-                                                    color:
-                                                        AppColors.textSecondary,
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Profile info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          profile?.fullName ?? 'User',
-                                          style: AppTextStyles.titleLarge
-                                              .copyWith(
-                                                color: AppColors.textPrimary,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          profile?.email ?? '',
-                                          style: AppTextStyles.bodySmall
-                                              .copyWith(
-                                                color: AppColors.textSecondary,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            // Stats
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatCard(
-                                    'Total\nReservations',
-                                    '${profile?.totalReservations ?? 0}',
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildStatCard(
-                                    'Active\nReservations',
-                                    '${profile?.activeReservations ?? 0}',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
+                            // Profile card with split design
+                            _buildProfileCard(profile),
+                            const SizedBox(height: 32),
                             // Menu items
                             _buildMenuItem(
                               icon: Icons.person_outline,
@@ -201,7 +130,7 @@ class ProfilePage extends StatelessWidget {
                               onTap: () {},
                             ),
                             _buildMenuItem(
-                              icon: Icons.payment,
+                              icon: Icons.payment_outlined,
                               title: 'Payment Methods',
                               onTap: () {},
                             ),
@@ -215,6 +144,7 @@ class ProfilePage extends StatelessWidget {
                               title: 'Help & Support',
                               onTap: () {},
                             ),
+                            const SizedBox(height: 16),
                             _buildMenuItem(
                               icon: Icons.logout,
                               title: 'Sign Out',
@@ -225,6 +155,7 @@ class ProfilePage extends StatelessWidget {
                               },
                               isDestructive: true,
                             ),
+                            const SizedBox(height: 100),
                           ],
                         ),
                       );
@@ -239,30 +170,103 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildProfileCard(dynamic profile) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      height: 140,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.headlineLarge.copyWith(
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Row(
+          children: [
+            // Left side - Light with avatar
+            Expanded(
+              flex: 4,
+              child: Container(
+                color: AppColors.surfaceLight,
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: profile?.avatarUrl != null
+                          ? Image.network(
+                              profile!.avatarUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.person,
+                                size: 48,
+                                color: AppColors.textSecondary,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 48,
+                              color: AppColors.textSecondary,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Right side - Dark with name
+            Expanded(
+              flex: 5,
+              child: Container(
+                color: AppColors.cardDark,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      profile?.fullName ?? 'User',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      profile?.fullName ?? 'User',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,81 +280,36 @@ class ProfilePage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
             Icon(
               icon,
               color: isDestructive ? AppColors.error : AppColors.textSecondary,
-              size: 24,
+              size: 22,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: AppTextStyles.bodyMedium.copyWith(
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                   color: isDestructive
                       ? AppColors.error
                       : AppColors.textPrimary,
                 ),
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 24),
+            Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 22),
           ],
         ),
       ),
     );
   }
-}
-
-class CircularProgressPainter extends CustomPainter {
-  final double progress;
-  final Color progressColor;
-  final Color backgroundColor;
-  final double strokeWidth;
-
-  CircularProgressPainter({
-    required this.progress,
-    required this.progressColor,
-    required this.backgroundColor,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    // Background circle
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final sweepAngle = 2 * math.pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

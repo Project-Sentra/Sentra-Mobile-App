@@ -20,8 +20,8 @@ void main() async {
 
   // Initialize Supabase
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseKey,
+    url: 'https://fouccavizcgbhvbemhov.supabase.co',
+    anonKey: 'sb_publishable_KdTPl9zNz6WBNCSfhTFKZA_r2x_PKqd',
   );
 
   // Initialize dependencies

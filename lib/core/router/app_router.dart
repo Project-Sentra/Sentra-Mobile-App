@@ -13,6 +13,8 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/parking/domain/entities/parking_facility.dart';
 import '../../features/parking/domain/entities/parking_slot.dart';
+import '../../features/vehicles/presentation/pages/vehicles_page.dart';
+import '../../features/history/presentation/pages/history_page.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -74,14 +76,12 @@ class AppRouter {
             ],
           ),
           GoRoute(
-            path: '/history',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('History'))),
+            path: '/vehicles',
+            builder: (context, state) => const VehiclesPage(),
           ),
           GoRoute(
-            path: '/reservations',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Reservations'))),
+            path: '/history',
+            builder: (context, state) => const HistoryPage(),
           ),
           GoRoute(
             path: '/profile',

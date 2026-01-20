@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_header.dart';
-import '../../../../core/widgets/text_fields.dart';
 import '../../domain/entities/parking_facility.dart';
 import '../bloc/parking_bloc.dart';
 import '../bloc/parking_event.dart';
@@ -22,6 +22,18 @@ class ParkingFacilitiesPage extends StatefulWidget {
 
 class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
   final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -47,6 +59,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 8),
               const AppHeader(title: 'Parking Facilities'),
               const SizedBox(height: 16),
               // Search field
@@ -54,15 +67,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: BlocBuilder<ParkingBloc, ParkingState>(
                   builder: (context, state) {
-                    return SearchTextField(
-                      hintText: 'search parking facilities',
-                      controller: _searchController,
-                      onChanged: (query) {
-                        context.read<ParkingBloc>().add(
-                          SearchFacilities(query),
-                        );
-                      },
-                    );
+                    return _buildSearchField(context);
                   },
                 ),
               ),
@@ -86,12 +91,18 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                           children: [
                             Text(
                               'Error loading facilities',
-                              style: AppTextStyles.bodyLarge,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               state.errorMessage ?? '',
-                              style: AppTextStyles.bodySmall,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -100,6 +111,10 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                                   const FetchParkingFacilities(),
                                 );
                               },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.textDark,
+                              ),
                               child: const Text('Retry'),
                             ),
                           ],
@@ -127,9 +142,11 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                               ),
                               child: Text(
                                 'RECENTS',
-                                style: AppTextStyles.labelSmall.copyWith(
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                   color: AppColors.textSecondary,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: 1.5,
                                 ),
                               ),
                             ),
@@ -149,20 +166,8 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                             ),
                             const SizedBox(height: 24),
                           ],
-                          if (state.facilities.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'ALL FACILITIES',
-                                style: AppTextStyles.labelSmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
+                          if (state.facilities.isNotEmpty &&
+                              state.recentFacilities.isEmpty) ...[
                             ...state.facilities.map(
                               (facility) => Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -191,6 +196,40 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
     );
   }
 
+  Widget _buildSearchField(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (query) {
+          context.read<ParkingBloc>().add(SearchFacilities(query));
+        },
+        style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textDark),
+        decoration: InputDecoration(
+          hintText: 'search parking facilities',
+          hintStyle: GoogleFonts.poppins(
+            fontSize: 14,
+            color: AppColors.textHint,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.textHint,
+            size: 22,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFacilityList(
     List<ParkingFacility> facilities,
     String emptyMessage,
@@ -199,7 +238,8 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
       return Center(
         child: Text(
           emptyMessage,
-          style: AppTextStyles.bodyMedium.copyWith(
+          style: GoogleFonts.poppins(
+            fontSize: 14,
             color: AppColors.textSecondary,
           ),
         ),

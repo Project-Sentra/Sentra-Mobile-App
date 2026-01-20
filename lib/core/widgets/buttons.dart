@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -29,7 +29,7 @@ class PrimaryButton extends StatelessWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textDark,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
+            borderRadius: BorderRadius.circular(30),
           ),
           elevation: 0,
         ),
@@ -49,7 +49,14 @@ class PrimaryButton extends StatelessWidget {
                     Icon(icon, size: 20),
                     const SizedBox(width: 8),
                   ],
-                  Text(text, style: AppTextStyles.buttonText),
+                  Text(
+                    text,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -82,7 +89,7 @@ class SecondaryButton extends StatelessWidget {
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: isLoading
@@ -96,7 +103,9 @@ class SecondaryButton extends StatelessWidget {
               )
             : Text(
                 text,
-                style: AppTextStyles.buttonText.copyWith(
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
               ),
@@ -129,24 +138,27 @@ class SocialButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.white,
           foregroundColor: AppColors.textDark,
-          side: BorderSide.none,
+          side: const BorderSide(color: AppColors.textDark, width: 1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isGoogle ? Icons.g_mobiledata : Icons.apple,
-              size: 24,
+              isGoogle ? Icons.g_mobiledata_rounded : Icons.apple,
+              size: isGoogle ? 28 : 22,
               color: AppColors.textDark,
             ),
             const SizedBox(width: 8),
             Text(
               text,
-              style: AppTextStyles.labelLarge.copyWith(
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textDark,
+                letterSpacing: 0.5,
               ),
             ),
           ],

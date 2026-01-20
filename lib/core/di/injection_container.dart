@@ -33,6 +33,40 @@ import '../../features/profile/domain/usecases/get_user_profile_usecase.dart';
 import '../../features/profile/domain/usecases/get_user_reservations_usecase.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 
+// Vehicles feature
+import '../../features/vehicles/data/datasources/vehicle_remote_data_source.dart';
+import '../../features/vehicles/data/datasources/vehicle_remote_data_source_impl.dart';
+import '../../features/vehicles/data/repositories/vehicle_repository_impl.dart';
+import '../../features/vehicles/domain/repositories/vehicle_repository.dart';
+import '../../features/vehicles/domain/usecases/get_vehicles_usecase.dart';
+import '../../features/vehicles/domain/usecases/add_vehicle_usecase.dart';
+import '../../features/vehicles/domain/usecases/update_vehicle_usecase.dart';
+import '../../features/vehicles/domain/usecases/delete_vehicle_usecase.dart';
+import '../../features/vehicles/presentation/bloc/vehicle_bloc.dart';
+
+// Payment feature
+import '../../features/payment/data/datasources/payment_remote_data_source.dart';
+import '../../features/payment/data/datasources/payment_remote_data_source_impl.dart';
+import '../../features/payment/data/repositories/payment_repository_impl.dart';
+import '../../features/payment/domain/repositories/payment_repository.dart';
+import '../../features/payment/domain/usecases/get_payment_methods_usecase.dart';
+import '../../features/payment/domain/usecases/add_payment_method_usecase.dart';
+import '../../features/payment/domain/usecases/delete_payment_method_usecase.dart';
+import '../../features/payment/domain/usecases/process_payment_usecase.dart';
+import '../../features/payment/domain/usecases/get_payment_history_usecase.dart';
+import '../../features/payment/presentation/bloc/payment_bloc.dart';
+
+// History feature
+import '../../features/history/data/datasources/history_remote_data_source.dart';
+import '../../features/history/data/datasources/history_remote_data_source_impl.dart';
+import '../../features/history/data/repositories/history_repository_impl.dart';
+import '../../features/history/domain/repositories/history_repository.dart';
+import '../../features/history/domain/usecases/get_parking_history_usecase.dart';
+import '../../features/history/domain/usecases/get_active_sessions_usecase.dart';
+import '../../features/history/domain/usecases/get_active_reservations_usecase.dart';
+import '../../features/history/domain/usecases/get_receipts_usecase.dart';
+import '../../features/history/presentation/bloc/history_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -119,6 +153,89 @@ Future<void> initializeDependencies() async {
     () => ProfileBloc(
       getUserProfileUseCase: sl(),
       getUserReservationsUseCase: sl(),
+    ),
+  );
+
+  // ========== Vehicles Feature ==========
+  // Data sources
+  sl.registerLazySingleton<VehicleRemoteDataSource>(
+    () => VehicleRemoteDataSourceImpl(supabaseClient: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<VehicleRepository>(
+    () => VehicleRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetVehiclesUseCase(sl()));
+  sl.registerLazySingleton(() => AddVehicleUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateVehicleUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteVehicleUseCase(sl()));
+
+  // Bloc
+  sl.registerFactory(
+    () => VehicleBloc(
+      getVehiclesUseCase: sl(),
+      addVehicleUseCase: sl(),
+      updateVehicleUseCase: sl(),
+      deleteVehicleUseCase: sl(),
+    ),
+  );
+
+  // ========== Payment Feature ==========
+  // Data sources
+  sl.registerLazySingleton<PaymentRemoteDataSource>(
+    () => PaymentRemoteDataSourceImpl(supabaseClient: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<PaymentRepository>(
+    () => PaymentRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetPaymentMethodsUseCase(sl()));
+  sl.registerLazySingleton(() => AddPaymentMethodUseCase(sl()));
+  sl.registerLazySingleton(() => DeletePaymentMethodUseCase(sl()));
+  sl.registerLazySingleton(() => ProcessPaymentUseCase(sl()));
+  sl.registerLazySingleton(() => GetPaymentHistoryUseCase(sl()));
+
+  // Bloc
+  sl.registerFactory(
+    () => PaymentBloc(
+      getPaymentMethodsUseCase: sl(),
+      addPaymentMethodUseCase: sl(),
+      deletePaymentMethodUseCase: sl(),
+      processPaymentUseCase: sl(),
+      getPaymentHistoryUseCase: sl(),
+    ),
+  );
+
+  // ========== History Feature ==========
+  // Data sources
+  sl.registerLazySingleton<HistoryRemoteDataSource>(
+    () => HistoryRemoteDataSourceImpl(supabaseClient: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<HistoryRepository>(
+    () => HistoryRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetParkingHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => GetActiveSessionsUseCase(sl()));
+  sl.registerLazySingleton(() => GetActiveReservationsUseCase(sl()));
+  sl.registerLazySingleton(() => GetReceiptsUseCase(sl()));
+
+  // Bloc
+  sl.registerFactory(
+    () => HistoryBloc(
+      getParkingHistoryUseCase: sl(),
+      getActiveSessionsUseCase: sl(),
+      getActiveReservationsUseCase: sl(),
+      getReceiptsUseCase: sl(),
     ),
   );
 }

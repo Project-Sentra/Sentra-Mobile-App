@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/sentra_logo.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -20,6 +21,16 @@ class _SplashPageState extends State<SplashPage>
   @override
   void initState() {
     super.initState();
+
+    // Set status bar to dark icons on yellow background
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -28,14 +39,14 @@ class _SplashPageState extends State<SplashPage>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
@@ -58,6 +69,14 @@ class _SplashPageState extends State<SplashPage>
   @override
   void dispose() {
     _controller.dispose();
+    // Reset status bar style
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+    );
     super.dispose();
   }
 
@@ -73,23 +92,10 @@ class _SplashPageState extends State<SplashPage>
               opacity: _fadeAnimation,
               child: ScaleTransition(
                 scale: _scaleAnimation,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.local_parking_rounded,
-                      size: 48,
-                      color: AppColors.textDark,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Sentra',
-                      style: AppTextStyles.displayLarge.copyWith(
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                child: const SentraLogo(
+                  size: 200,
+                  isDark: true,
+                  showText: false,
                 ),
               ),
             );
