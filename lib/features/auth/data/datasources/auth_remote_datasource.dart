@@ -39,17 +39,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const AuthException('Sign in failed');
       }
 
-      // Get user profile from profiles table
-      final profileData = await supabaseClient
-          .from('profiles')
-          .select()
-          .eq('id', response.user!.id)
-          .single();
+      // Try to get user profile from profiles table, fallback to auth data
+      Map<String, dynamic>? profileData;
+      try {
+        profileData = await supabaseClient
+            .from('profiles')
+            .select()
+            .eq('id', response.user!.id)
+            .maybeSingle();
+      } catch (_) {
+        // profiles table might not exist, continue with auth data
+      }
 
       return UserModel.fromJson({
         'id': response.user!.id,
         'email': response.user!.email,
-        ...profileData,
+        'full_name':
+            profileData?['full_name'] ??
+            response.user!.userMetadata?['full_name'],
+        'avatar_url':
+            profileData?['avatar_url'] ??
+            response.user!.userMetadata?['avatar_url'],
+        'created_at': profileData?['created_at'] ?? response.user!.createdAt,
       });
     } on AuthException {
       rethrow;
@@ -106,16 +117,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final user = supabaseClient.auth.currentUser;
       if (user == null) return null;
 
-      final profileData = await supabaseClient
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
+      // Try to get user profile from profiles table, fallback to auth data
+      Map<String, dynamic>? profileData;
+      try {
+        profileData = await supabaseClient
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+      } catch (_) {
+        // profiles table might not exist, continue with auth data
+      }
 
       return UserModel.fromJson({
         'id': user.id,
         'email': user.email,
-        ...profileData,
+        'full_name':
+            profileData?['full_name'] ?? user.userMetadata?['full_name'],
+        'avatar_url':
+            profileData?['avatar_url'] ?? user.userMetadata?['avatar_url'],
+        'created_at': profileData?['created_at'] ?? user.createdAt,
       });
     } catch (e) {
       return null;
