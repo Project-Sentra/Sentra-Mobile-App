@@ -1,12 +1,12 @@
 # 🚗 Sentra Mobile App
 
 <p align="center">
-  <img src="assets/icons/app_icon.png" alt="Sentra Logo" width="120" height="120">
+  <img src="assets/images/logoDark.png" alt="Sentra Logo" width="200" height="200">
 </p>
 
 <p align="center">
   <strong>Smart Parking Management System</strong><br>
-  A modern Flutter application for seamless parking spot management and reservations
+  A modern Flutter application for parking spot management and reservations
 </p>
 
 <p align="center">
