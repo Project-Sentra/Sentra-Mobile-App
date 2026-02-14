@@ -19,8 +19,8 @@ void main() async {
 
   // Initialize Supabase
   await Supabase.initialize(
-    url: 'https://zjbzxbymneuouuhenown.supabase.co',
-    anonKey: 'sb_publishable_dcAdQIkVJygdHSi7FG67jQ_RqRpI__L',
+    url: 'https://pnopbaulalcwaucrynim.supabase.co',
+    anonKey: 'sb_publishable_COp2pemA4NFWQvg4XUBM8g_HGWhN4mq',
   );
 
   // Initialize dependencies

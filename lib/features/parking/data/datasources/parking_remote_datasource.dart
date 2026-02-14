@@ -28,24 +28,18 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   @override
   Future<List<ParkingLocationModel>> getParkingLocations() async {
     try {
-      // Try to get from parking_locations table
-      try {
-        final response = await supabaseClient
-            .from('parking_locations')
-            .select()
-            .eq('is_active', true)
-            .order('name');
+      final response = await supabaseClient
+          .from('facilities')
+          .select()
+          .eq('is_active', true)
+          .order('name');
 
-        final locations = (response as List)
-            .map((json) => ParkingLocationModel.fromJson(json))
-            .toList();
+      final locations = (response as List)
+          .map((json) => ParkingLocationModel.fromJson(json))
+          .toList();
 
-        // Get slot counts for each location
-        return await _enrichLocationsWithSlotCounts(locations);
-      } catch (e) {
-        // If parking_locations doesn't exist, create a default location from spots
-        return [await _createDefaultLocation()];
-      }
+      // Get slot counts for each location
+      return await _enrichLocationsWithSlotCounts(locations);
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -59,27 +53,38 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
     // Get all active reservations to include reserved spots as occupied
     final activeReservations = await supabaseClient
         .from('reservations')
-        .select('spot_id')
-        .eq('status', 'active');
+        .select('facility_id, spot_id')
+        .inFilter('status', ['pending', 'confirmed', 'checked_in']);
 
-    final reservedSpotIds = (activeReservations as List)
-        .map((r) => r['spot_id'])
-        .toSet();
+    final reservedByFacility = <int, Set<int>>{};
+    for (final reservation in (activeReservations as List)) {
+      final facilityId = reservation['facility_id'] as int?;
+      final spotId = reservation['spot_id'] as int?;
+      if (facilityId == null || spotId == null) {
+        continue;
+      }
+      reservedByFacility
+          .putIfAbsent(facilityId, () => <int>{})
+          .add(spotId);
+    }
 
     for (final location in locations) {
       try {
         final spotsResponse = await supabaseClient
             .from('parking_spots')
-            .select('id, is_occupied')
-            .eq('location_id', location.id);
+            .select('id, is_occupied, is_reserved')
+            .eq('facility_id', location.id)
+            .eq('is_active', true);
 
         final spots = spotsResponse as List;
         final totalSlots = spots.length;
+        final reservedSpotIds = reservedByFacility[location.id] ?? <int>{};
         // Count spots that are either occupied OR have active reservations
         final availableSlots = spots
             .where(
               (s) =>
                   s['is_occupied'] == false &&
+                  s['is_reserved'] != true &&
                   !reservedSpotIds.contains(s['id']),
             )
             .length;
@@ -114,13 +119,14 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
     // Create a virtual location from existing spots
     final spotsResponse = await supabaseClient
         .from('parking_spots')
-        .select('id, is_occupied');
+        .select('id, is_occupied, is_reserved')
+        .eq('is_active', true);
 
     // Get active reservations
     final activeReservations = await supabaseClient
         .from('reservations')
         .select('spot_id')
-        .eq('status', 'active');
+        .inFilter('status', ['pending', 'confirmed', 'checked_in']);
 
     final reservedSpotIds = (activeReservations as List)
         .map((r) => r['spot_id'])
@@ -131,7 +137,9 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
     final availableSlots = spots
         .where(
           (s) =>
-              s['is_occupied'] == false && !reservedSpotIds.contains(s['id']),
+              s['is_occupied'] == false &&
+              s['is_reserved'] != true &&
+              !reservedSpotIds.contains(s['id']),
         )
         .length;
 
@@ -151,12 +159,8 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   @override
   Future<ParkingLocationModel> getParkingLocationById(int id) async {
     try {
-      if (id == 0) {
-        return _createDefaultLocation();
-      }
-
       final response = await supabaseClient
-          .from('parking_locations')
+          .from('facilities')
           .select()
           .eq('id', id)
           .single();
@@ -173,7 +177,7 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
   Future<List<ParkingLocationModel>> searchLocations(String query) async {
     try {
       final response = await supabaseClient
-          .from('parking_locations')
+          .from('facilities')
           .select()
           .or('name.ilike.%$query%,address.ilike.%$query%')
           .eq('is_active', true)
@@ -197,6 +201,7 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
       final response = await supabaseClient
           .from('parking_spots')
           .select()
+          .eq('is_active', true)
           .order('spot_name');
 
       return (response as List)
@@ -217,32 +222,46 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
         response = await supabaseClient
             .from('parking_spots')
             .select()
+            .eq('is_active', true)
             .order('spot_name');
       } else {
         response = await supabaseClient
             .from('parking_spots')
             .select()
-            .eq('location_id', locationId)
+            .eq('facility_id', locationId)
+            .eq('is_active', true)
             .order('spot_name');
       }
 
       // Get active reservations to mark spots as reserved
-      final activeReservations = await supabaseClient
+      var reservationsQuery = supabaseClient
           .from('reservations')
-          .select('spot_id')
-          .eq('status', 'active');
+          .select('spot_id, reserved_end')
+          .inFilter('status', ['pending', 'confirmed', 'checked_in']);
+      if (locationId != 0) {
+        reservationsQuery = reservationsQuery.eq('facility_id', locationId);
+      }
+      final activeReservations = await reservationsQuery;
 
-      final reservedSpotIds = (activeReservations as List)
-          .map((r) => r['spot_id'])
-          .toSet();
+      final reservedUntilBySpotId = <int, String?>{};
+      for (final reservation in (activeReservations as List)) {
+        final spotId = reservation['spot_id'] as int?;
+        if (spotId == null) continue;
+        reservedUntilBySpotId[spotId] = reservation['reserved_end'] as String?;
+      }
 
       return response.map((json) {
         final spotId = json['id'];
-        final isReserved = reservedSpotIds.contains(spotId);
-
-        // If spot is reserved, mark it as occupied
+        final reservedUntil = reservedUntilBySpotId[spotId];
+        final isReserved =
+            reservedUntilBySpotId.containsKey(spotId) ||
+            json['is_reserved'] == true;
         if (isReserved) {
-          json['is_occupied'] = true;
+          json['is_reserved'] = true;
+          json['reserved_by'] = json['reserved_by'] ?? 'reservation';
+          if (reservedUntil != null) {
+            json['reserved_until'] = reservedUntil;
+          }
         }
 
         return ParkingSlotModel.fromJson(json);
@@ -274,6 +293,7 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
           .from('parking_spots')
           .select()
           .ilike('spot_name', '%$query%')
+          .eq('is_active', true)
           .order('spot_name');
 
       return (response as List)
@@ -291,6 +311,8 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
           .from('parking_spots')
           .select()
           .eq('is_occupied', false)
+          .eq('is_reserved', false)
+          .eq('is_active', true)
           .order('spot_name');
 
       return (response as List)
@@ -313,13 +335,17 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
             .from('parking_spots')
             .select()
             .eq('is_occupied', false)
+            .eq('is_reserved', false)
+            .eq('is_active', true)
             .order('spot_name');
       } else {
         response = await supabaseClient
             .from('parking_spots')
             .select()
-            .eq('location_id', locationId)
+            .eq('facility_id', locationId)
             .eq('is_occupied', false)
+            .eq('is_reserved', false)
+            .eq('is_active', true)
             .order('spot_name');
       }
 

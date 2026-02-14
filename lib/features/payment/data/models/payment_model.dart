@@ -18,17 +18,25 @@ class PaymentModel extends Payment {
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      reservationId: json['reservation_id'] as String?,
-      parkingSessionId: json['parking_session_id'] as String?,
-      paymentMethodId: json['payment_method_id'] as String,
+      id: json['id'].toString(),
+      userId: json['user_id']?.toString() ?? '',
+      reservationId: json['reservation_id']?.toString(),
+      parkingSessionId:
+          (json['session_id'] ?? json['parking_session_id'])?.toString(),
+      paymentMethodId: (json['payment_method_id'] ??
+              json['payment_method'] ??
+              'wallet')
+          .toString(),
       amount: (json['amount'] as num).toDouble(),
       currency: json['currency'] as String? ?? 'LKR',
-      status: _parsePaymentStatus(json['status'] as String),
-      transactionId: json['transaction_id'] as String?,
+      status: _parsePaymentStatus(
+        (json['payment_status'] ?? json['status'] ?? 'pending') as String,
+      ),
+      transactionId:
+          json['transaction_ref'] as String? ??
+          json['transaction_id'] as String?,
       failureReason: json['failure_reason'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'].toString()),
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,
@@ -36,19 +44,19 @@ class PaymentModel extends Payment {
   }
 
   Map<String, dynamic> toJson() {
+    final parsedMethodId = int.tryParse(paymentMethodId);
     return {
       'id': id,
       'user_id': userId,
       'reservation_id': reservationId,
-      'parking_session_id': parkingSessionId,
-      'payment_method_id': paymentMethodId,
+      'session_id': parkingSessionId,
+      'payment_method_id': parsedMethodId,
+      'payment_method': parsedMethodId != null ? 'card' : paymentMethodId,
       'amount': amount,
       'currency': currency,
-      'status': _paymentStatusToString(status),
-      'transaction_id': transactionId,
-      'failure_reason': failureReason,
+      'payment_status': _paymentStatusToString(status),
+      'transaction_ref': transactionId,
       'created_at': createdAt.toIso8601String(),
-      'completed_at': completedAt?.toIso8601String(),
     };
   }
 

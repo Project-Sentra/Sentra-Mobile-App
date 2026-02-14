@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/user_helpers.dart';
 import '../../../history/data/models/parking_session_model.dart';
 import '../models/user_profile_model.dart';
 
@@ -27,49 +28,46 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         throw ServerException('User not authenticated');
       }
 
-      // Try to get profile from users table, fall back to auth data
-      Map<String, dynamic> profileData;
-      try {
-        final response = await supabaseClient
-            .from('users')
-            .select()
-            .eq('id', userId)
-            .maybeSingle();
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: userId,
+        email: authUser.email,
+        fullName: authUser.userMetadata?['full_name'] as String?,
+        profileImage: authUser.userMetadata?['avatar_url'] as String?,
+      );
+      final dbUserId = (userRecord['id'] as num).toInt();
 
-        if (response != null) {
-          profileData = response;
-        } else {
-          // Use auth user data as fallback
-          profileData = {
-            'id': authUser.id,
-            'email': authUser.email ?? '',
-            'full_name': authUser.userMetadata?['full_name'],
-            'avatar_url': authUser.userMetadata?['avatar_url'],
-            'created_at': authUser.createdAt,
-          };
-        }
-      } catch (e) {
-        // If users table doesn't exist, use auth data
-        profileData = {
-          'id': authUser.id,
-          'email': authUser.email ?? '',
-          'full_name': authUser.userMetadata?['full_name'],
-          'avatar_url': authUser.userMetadata?['avatar_url'],
-          'created_at': authUser.createdAt,
-        };
-      }
+      final profileData = {
+        'id': authUser.id,
+        'email': userRecord['email'] ?? authUser.email ?? '',
+        'full_name': userRecord['full_name'],
+        'avatar_url': userRecord['profile_image'],
+        'created_at': userRecord['created_at'] ?? authUser.createdAt,
+      };
 
       // Get session stats from parking_sessions
       int totalSessions = 0;
       int activeSessions = 0;
       try {
-        final sessionsResponse = await supabaseClient
-            .from('parking_sessions')
-            .select('id, exit_time');
+        final vehiclesResponse = await supabaseClient
+            .from('vehicles')
+            .select('id')
+            .eq('user_id', dbUserId);
+        final vehicleIds = (vehiclesResponse as List)
+            .map((v) => v['id'])
+            .where((id) => id != null)
+            .toList();
 
-        final sessions = sessionsResponse as List;
-        totalSessions = sessions.length;
-        activeSessions = sessions.where((s) => s['exit_time'] == null).length;
+        if (vehicleIds.isNotEmpty) {
+          final sessionsResponse = await supabaseClient
+              .from('parking_sessions')
+              .select('id, exit_time')
+              .inFilter('vehicle_id', vehicleIds);
+
+          final sessions = sessionsResponse as List;
+          totalSessions = sessions.length;
+          activeSessions = sessions.where((s) => s['exit_time'] == null).length;
+        }
       } catch (e) {
         // Ignore if parking_sessions doesn't exist
       }
@@ -115,6 +113,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
       if (updates.isNotEmpty) {
         await supabaseClient.auth.updateUser(UserAttributes(data: updates));
+        await supabaseClient
+            .from('users')
+            .update({
+              if (fullName != null) 'full_name': fullName,
+              if (avatarUrl != null) 'profile_image': avatarUrl,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('auth_user_id', userId);
       }
     } catch (e) {
       throw ServerException(e.toString());

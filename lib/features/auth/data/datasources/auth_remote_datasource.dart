@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import '../../../../core/utils/user_helpers.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> signIn({required String email, required String password});
@@ -39,28 +40,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const AuthException('Sign in failed');
       }
 
-      // Try to get user profile from profiles table, fallback to auth data
-      Map<String, dynamic>? profileData;
-      try {
-        profileData = await supabaseClient
-            .from('profiles')
-            .select()
-            .eq('id', response.user!.id)
-            .maybeSingle();
-      } catch (_) {
-        // profiles table might not exist, continue with auth data
-      }
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: response.user!.id,
+        email: response.user!.email,
+        fullName: response.user!.userMetadata?['full_name'] as String?,
+        profileImage: response.user!.userMetadata?['avatar_url'] as String?,
+      );
 
       return UserModel.fromJson({
         'id': response.user!.id,
-        'email': response.user!.email,
+        'email': userRecord['email'] ?? response.user!.email,
         'full_name':
-            profileData?['full_name'] ??
+            userRecord['full_name'] ??
             response.user!.userMetadata?['full_name'],
-        'avatar_url':
-            profileData?['avatar_url'] ??
+        'avatar_url': userRecord['profile_image'] ??
             response.user!.userMetadata?['avatar_url'],
-        'created_at': profileData?['created_at'] ?? response.user!.createdAt,
+        'created_at': userRecord['created_at'] ?? response.user!.createdAt,
       });
     } on AuthException {
       rethrow;
@@ -86,15 +82,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const AuthException('Sign up failed');
       }
 
-      // Profile is automatically created by database trigger
-      // No need to manually insert here
-
-      return UserModel(
-        id: response.user!.id,
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: response.user!.id,
         email: email,
         fullName: fullName,
-        createdAt: DateTime.now(),
+        profileImage: response.user!.userMetadata?['avatar_url'] as String?,
       );
+
+      return UserModel.fromJson({
+        'id': response.user!.id,
+        'email': userRecord['email'] ?? email,
+        'full_name': userRecord['full_name'] ?? fullName,
+        'avatar_url': userRecord['profile_image'],
+        'created_at': userRecord['created_at'] ?? DateTime.now().toIso8601String(),
+      });
     } on AuthException {
       rethrow;
     } catch (e) {
@@ -117,26 +119,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final user = supabaseClient.auth.currentUser;
       if (user == null) return null;
 
-      // Try to get user profile from profiles table, fallback to auth data
-      Map<String, dynamic>? profileData;
-      try {
-        profileData = await supabaseClient
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .maybeSingle();
-      } catch (_) {
-        // profiles table might not exist, continue with auth data
-      }
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: user.id,
+        email: user.email,
+        fullName: user.userMetadata?['full_name'] as String?,
+        profileImage: user.userMetadata?['avatar_url'] as String?,
+      );
 
       return UserModel.fromJson({
         'id': user.id,
-        'email': user.email,
+        'email': userRecord['email'] ?? user.email,
         'full_name':
-            profileData?['full_name'] ?? user.userMetadata?['full_name'],
+            userRecord['full_name'] ?? user.userMetadata?['full_name'],
         'avatar_url':
-            profileData?['avatar_url'] ?? user.userMetadata?['avatar_url'],
-        'created_at': profileData?['created_at'] ?? user.createdAt,
+            userRecord['profile_image'] ?? user.userMetadata?['avatar_url'],
+        'created_at': userRecord['created_at'] ?? user.createdAt,
       });
     } catch (e) {
       return null;
@@ -161,23 +159,27 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const AuthException('Google sign in failed');
       }
 
-      // Upsert profile
-      await supabaseClient.from('profiles').upsert({
-        'id': user.id,
-        'email': user.email,
-        'full_name':
-            user.userMetadata?['full_name'] ?? user.userMetadata?['name'],
-        'avatar_url':
-            user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
-      });
-
-      return UserModel(
-        id: user.id,
-        email: user.email ?? '',
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: user.id,
+        email: user.email,
         fullName:
             user.userMetadata?['full_name'] as String? ??
             user.userMetadata?['name'] as String?,
+        profileImage:
+            user.userMetadata?['avatar_url'] as String? ??
+            user.userMetadata?['picture'] as String?,
+      );
+
+      return UserModel(
+        id: user.id,
+        email: userRecord['email'] ?? user.email ?? '',
+        fullName:
+            userRecord['full_name'] as String? ??
+            user.userMetadata?['full_name'] as String? ??
+            user.userMetadata?['name'] as String?,
         avatarUrl:
+            userRecord['profile_image'] as String? ??
             user.userMetadata?['avatar_url'] as String? ??
             user.userMetadata?['picture'] as String?,
       );
@@ -203,17 +205,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const AuthException('Apple sign in failed');
       }
 
-      // Upsert profile
-      await supabaseClient.from('profiles').upsert({
-        'id': user.id,
-        'email': user.email,
-        'full_name': user.userMetadata?['full_name'],
-      });
+      final userRecord = await getOrCreateUserRecord(
+        supabaseClient,
+        authUserId: user.id,
+        email: user.email,
+        fullName: user.userMetadata?['full_name'] as String?,
+      );
 
       return UserModel(
         id: user.id,
-        email: user.email ?? '',
-        fullName: user.userMetadata?['full_name'] as String?,
+        email: userRecord['email'] ?? user.email ?? '',
+        fullName: userRecord['full_name'] as String? ??
+            user.userMetadata?['full_name'] as String?,
       );
     } catch (e) {
       throw AuthException(e.toString());

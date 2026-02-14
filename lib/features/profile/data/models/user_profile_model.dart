@@ -12,15 +12,17 @@ class UserProfileModel extends UserProfile {
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
+    final createdAtValue = json['created_at'];
     return UserProfileModel(
       id: json['id'] as String,
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      avatarUrl:
+          json['avatar_url'] as String? ?? json['profile_image'] as String?,
       totalReservations: json['total_reservations'] as int? ?? 0,
       activeReservations: json['active_reservations'] as int? ?? 0,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      createdAt: createdAtValue != null
+          ? DateTime.parse(createdAtValue.toString())
           : null,
     );
   }
@@ -30,7 +32,7 @@ class UserProfileModel extends UserProfile {
       'id': id,
       'email': email,
       'full_name': fullName,
-      'avatar_url': avatarUrl,
+      'profile_image': avatarUrl,
       'total_reservations': totalReservations,
       'active_reservations': activeReservations,
       'created_at': createdAt?.toIso8601String(),

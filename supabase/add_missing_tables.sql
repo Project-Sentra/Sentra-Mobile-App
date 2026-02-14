@@ -1,5 +1,4 @@
--- Add missing tables for the Sentra Mobile App
--- Run this SQL in your Supabase SQL Editor to add the required tables
+-- Deprecated: Mobile app now uses shared schema in Web/admin_backend/supabase_schema.sql
 
 -- ==============================================
 -- VEHICLES TABLE (for user vehicle registration)
