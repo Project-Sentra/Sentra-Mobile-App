@@ -17,18 +17,18 @@ class PaymentMethodModel extends PaymentMethod {
 
   factory PaymentMethodModel.fromJson(Map<String, dynamic> json) {
     return PaymentMethodModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      type: _parsePaymentMethodType(json['type'] as String),
+      id: json['id'].toString(),
+      userId: json['user_id'].toString(),
+      type: _parsePaymentMethodType(json['type'] as String? ?? 'card'),
       cardBrand: json['card_brand'] as String?,
-      lastFourDigits: json['last_four_digits'] as String,
+      lastFourDigits: json['last_four_digits'].toString(),
       cardHolderName: json['card_holder_name'] as String?,
       expiryMonth: json['expiry_month'] as int?,
       expiryYear: json['expiry_year'] as int?,
       isDefault: json['is_default'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'].toString()),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTime.parse(json['updated_at'].toString())
           : null,
     );
   }
@@ -54,6 +54,7 @@ class PaymentMethodModel extends PaymentMethod {
       case 'card':
         return PaymentMethodType.card;
       case 'bank_account':
+      case 'bank_transfer':
         return PaymentMethodType.bankAccount;
       case 'mobile_money':
         return PaymentMethodType.mobileMoney;
@@ -67,7 +68,7 @@ class PaymentMethodModel extends PaymentMethod {
       case PaymentMethodType.card:
         return 'card';
       case PaymentMethodType.bankAccount:
-        return 'bank_account';
+        return 'bank_transfer';
       case PaymentMethodType.mobileMoney:
         return 'mobile_money';
     }

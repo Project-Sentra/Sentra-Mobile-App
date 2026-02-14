@@ -1,5 +1,6 @@
--- Sentra Parking Database Schema
--- Run this SQL in your Supabase SQL Editor
+-- Sentra Parking Database Schema (Deprecated)
+-- The mobile app now uses the shared schema in:
+--   Web/admin_backend/supabase_schema.sql
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

@@ -19,7 +19,7 @@ class ParkingLocationModel extends ParkingLocation {
 
   factory ParkingLocationModel.fromJson(Map<String, dynamic> json) {
     return ParkingLocationModel(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       address: json['address'] as String?,
       latitude: json['latitude'] != null
@@ -28,17 +28,18 @@ class ParkingLocationModel extends ParkingLocation {
       longitude: json['longitude'] != null
           ? double.tryParse(json['longitude'].toString())
           : null,
-      pricePerHour: json['price_per_hour'] != null
-          ? double.parse(json['price_per_hour'].toString())
+      pricePerHour: (json['hourly_rate'] ?? json['price_per_hour']) != null
+          ? double.parse((json['hourly_rate'] ?? json['price_per_hour']).toString())
           : 100,
       currency: json['currency'] as String? ?? 'LKR',
       imageUrl: json['image_url'] as String?,
       isActive: json['is_active'] as bool? ?? true,
-      totalSlots: json['total_slots'] as int? ?? 0,
+      totalSlots:
+          (json['total_spots'] as int?) ?? (json['total_slots'] as int?) ?? 0,
       availableSlots: json['available_slots'] as int? ?? 0,
       occupiedSlots: json['occupied_slots'] as int? ?? 0,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.parse(json['created_at'].toString())
           : null,
     );
   }
@@ -50,13 +51,11 @@ class ParkingLocationModel extends ParkingLocation {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
-      'price_per_hour': pricePerHour,
+      'hourly_rate': pricePerHour,
       'currency': currency,
       'image_url': imageUrl,
       'is_active': isActive,
-      'total_slots': totalSlots,
-      'available_slots': availableSlots,
-      'occupied_slots': occupiedSlots,
+      'total_spots': totalSlots,
       'created_at': createdAt?.toIso8601String(),
     };
   }

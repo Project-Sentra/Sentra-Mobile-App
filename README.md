@@ -38,9 +38,8 @@
 
 - 🚙 **Vehicle Management**
   - Add and manage multiple vehicles
-  - Set default vehicle for quick bookings
   - Store vehicle details (make, model, color, plate)
-  - Easy vehicle switching
+  - Use a saved vehicle for bookings
 
 - 📅 **Booking System**
   - Real-time booking creation
@@ -49,8 +48,8 @@
   - Flexible time slot selection
 
 - 💳 **Payment Integration**
-  - Multiple payment method support
-  - Secure payment processing
+  - Stripe-ready payment method storage (brand/last4/expiry only)
+  - Payment records stored in Supabase
   - Payment history and receipts
   - Default payment method management
 
@@ -187,14 +186,16 @@ dependencies:
 
 3. **Setup Supabase**
    - Create a project on [Supabase](https://supabase.com)
-   - Run the SQL schema from `supabase/schema.sql`
+   - Run the shared SQL schema from `Web/admin_backend/supabase_schema.sql`
+     (used by both the web admin and mobile app)
    - Update Supabase credentials in `lib/main.dart`:
-     ```dart
-     await Supabase.initialize(
-       url: 'YOUR_SUPABASE_URL',
-       anonKey: 'YOUR_SUPABASE_ANON_KEY',
-     );
-     ```
+      ```dart
+      await Supabase.initialize(
+        url: 'YOUR_SUPABASE_URL',
+        anonKey: 'YOUR_SUPABASE_ANON_KEY',
+      );
+      ```
+   - Stripe: store only tokenized payment methods (do not persist raw card data)
 
 4. **Configure OAuth (Optional)**
    - Setup Google Sign-In in Firebase Console
@@ -223,17 +224,17 @@ flutter build ios --release
 
 ## 📊 Database Schema
 
-The app uses Supabase (PostgreSQL) with the following main tables:
+The app uses the shared Supabase (PostgreSQL) schema with the following main tables:
 
-- **profiles**: User profile information
-- **parking_facilities**: Parking location details
-- **parking_slots**: Individual parking spots
-- **reservations**: Booking records
-- **vehicles**: User vehicle information
-- **payments**: Payment transaction records
-- **parking_sessions**: Active parking sessions
+- **users** (linked to `auth.users` via `auth_user_id`)
+- **vehicles**
+- **facilities**, **floors**, **parking_spots**
+- **reservations**, **parking_sessions**
+- **payments**, **payment_methods**, **user_wallets**
+- **subscriptions**, **notifications**
 
-For complete schema, see [`supabase/schema.sql`](supabase/schema.sql)
+For the complete schema, see
+[`Web/admin_backend/supabase_schema.sql`](../../Web/admin_backend/supabase_schema.sql).
 
 ---
 
@@ -287,7 +288,7 @@ Sentra-Mobile-App/
 ├── assets/              # Images, icons, fonts
 │   ├── icons/
 │   └── images/
-├── supabase/            # Database schema
+├── supabase/            # Legacy schema (deprecated; use Web/admin_backend)
 ├── test/                # Test files
 ├── pubspec.yaml         # Dependencies
 └── README.md           # This file
@@ -330,7 +331,7 @@ Contributions are welcome! Please follow these steps:
 - [ ] QR code scanning for parking entry/exit
 - [ ] Offline mode support
 - [ ] Multi-language support
-- [ ] Payment gateway integration (Stripe/PayPal)
+- [ ] Stripe backend charging (payment intent workflow)
 - [ ] License plate recognition integration
 - [ ] Parking duration extensions
 - [ ] Social sharing features

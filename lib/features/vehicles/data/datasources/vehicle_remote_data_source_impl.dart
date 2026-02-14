@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/user_helpers.dart';
 import '../models/vehicle_model.dart';
 import 'vehicle_remote_data_source.dart';
 
@@ -11,11 +12,12 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
   @override
   Future<List<VehicleModel>> getVehicles(String userId) async {
     try {
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
       final response = await supabaseClient
           .from('vehicles')
           .select()
-          .eq('user_id', userId)
-          .order('is_default', ascending: false)
+          .eq('user_id', dbUserId)
+          .eq('is_active', true)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -29,10 +31,11 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
   @override
   Future<VehicleModel> getVehicleById(String vehicleId) async {
     try {
+      final parsedId = int.tryParse(vehicleId) ?? vehicleId;
       final response = await supabaseClient
           .from('vehicles')
           .select()
-          .eq('id', vehicleId)
+          .eq('id', parsedId)
           .single();
 
       return VehicleModel.fromJson(response);
@@ -53,25 +56,18 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
     bool isDefault = false,
   }) async {
     try {
-      // If this is the default vehicle, unset others first
-      if (isDefault) {
-        await supabaseClient
-            .from('vehicles')
-            .update({'is_default': false})
-            .eq('user_id', userId);
-      }
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
 
       final response = await supabaseClient
           .from('vehicles')
           .insert({
-            'user_id': userId,
-            'license_plate': licensePlate.toUpperCase(),
-            'vehicle_name': vehicleName,
+            'user_id': dbUserId,
+            'plate_number': licensePlate.toUpperCase(),
             'vehicle_type': vehicleType,
-            'vehicle_color': vehicleColor,
-            'vehicle_make': vehicleMake,
-            'vehicle_model': vehicleModel,
-            'is_default': isDefault,
+            'color': vehicleColor,
+            'make': vehicleMake,
+            'model': vehicleModel,
+            'is_active': true,
           })
           .select()
           .single();
@@ -94,24 +90,21 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
     bool? isDefault,
   }) async {
     try {
-      final updateData = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      final parsedId = int.tryParse(vehicleId) ?? vehicleId;
+      final updateData = <String, dynamic>{};
 
       if (licensePlate != null) {
-        updateData['license_plate'] = licensePlate.toUpperCase();
+        updateData['plate_number'] = licensePlate.toUpperCase();
       }
-      if (vehicleName != null) updateData['vehicle_name'] = vehicleName;
       if (vehicleType != null) updateData['vehicle_type'] = vehicleType;
-      if (vehicleColor != null) updateData['vehicle_color'] = vehicleColor;
-      if (vehicleMake != null) updateData['vehicle_make'] = vehicleMake;
-      if (vehicleModel != null) updateData['vehicle_model'] = vehicleModel;
-      if (isDefault != null) updateData['is_default'] = isDefault;
+      if (vehicleColor != null) updateData['color'] = vehicleColor;
+      if (vehicleMake != null) updateData['make'] = vehicleMake;
+      if (vehicleModel != null) updateData['model'] = vehicleModel;
 
       final response = await supabaseClient
           .from('vehicles')
           .update(updateData)
-          .eq('id', vehicleId)
+          .eq('id', parsedId)
           .select()
           .single();
 
@@ -124,7 +117,8 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
   @override
   Future<void> deleteVehicle(String vehicleId) async {
     try {
-      await supabaseClient.from('vehicles').delete().eq('id', vehicleId);
+      final parsedId = int.tryParse(vehicleId) ?? vehicleId;
+      await supabaseClient.from('vehicles').delete().eq('id', parsedId);
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -136,23 +130,12 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
     required String vehicleId,
   }) async {
     try {
-      // Unset all other defaults for this user
-      await supabaseClient
-          .from('vehicles')
-          .update({'is_default': false})
-          .eq('user_id', userId);
-
-      // Set this vehicle as default
+      final parsedId = int.tryParse(vehicleId) ?? vehicleId;
       final response = await supabaseClient
           .from('vehicles')
-          .update({
-            'is_default': true,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', vehicleId)
           .select()
+          .eq('id', parsedId)
           .single();
-
       return VehicleModel.fromJson(response);
     } catch (e) {
       throw ServerException(e.toString());

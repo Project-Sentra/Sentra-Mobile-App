@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/user_helpers.dart';
 import '../../domain/entities/payment_method.dart';
 import '../models/payment_method_model.dart';
 import '../models/payment_model.dart';
@@ -13,10 +14,11 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
   @override
   Future<List<PaymentMethodModel>> getPaymentMethods(String userId) async {
     try {
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
       final response = await supabaseClient
           .from('payment_methods')
           .select()
-          .eq('user_id', userId)
+          .eq('user_id', dbUserId)
           .order('is_default', ascending: false)
           .order('created_at', ascending: false);
 
@@ -40,6 +42,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     bool isDefault = false,
   }) async {
     try {
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
       // Detect card brand from card number
       final cardBrand = _detectCardBrand(cardNumber);
       final lastFourDigits = cardNumber.substring(cardNumber.length - 4);
@@ -49,14 +52,19 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
         await supabaseClient
             .from('payment_methods')
             .update({'is_default': false})
-            .eq('user_id', userId);
+            .eq('user_id', dbUserId);
       }
 
       final response = await supabaseClient
           .from('payment_methods')
           .insert({
-            'user_id': userId,
-            'type': type == PaymentMethodType.card ? 'card' : 'bank_account',
+            'user_id': dbUserId,
+            'type': type == PaymentMethodType.card
+                ? 'card'
+                : type == PaymentMethodType.bankAccount
+                    ? 'bank_transfer'
+                    : 'mobile_money',
+            'provider': 'stripe',
             'card_brand': cardBrand,
             'last_four_digits': lastFourDigits,
             'card_holder_name': cardHolderName,
@@ -99,10 +107,11 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
   @override
   Future<void> deletePaymentMethod(String paymentMethodId) async {
     try {
+      final parsedId = int.tryParse(paymentMethodId) ?? paymentMethodId;
       await supabaseClient
           .from('payment_methods')
           .delete()
-          .eq('id', paymentMethodId);
+          .eq('id', parsedId);
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -114,11 +123,13 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     required String paymentMethodId,
   }) async {
     try {
+      final parsedId = int.tryParse(paymentMethodId) ?? paymentMethodId;
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
       // Unset all other defaults
       await supabaseClient
           .from('payment_methods')
           .update({'is_default': false})
-          .eq('user_id', userId);
+          .eq('user_id', dbUserId);
 
       // Set this one as default
       final response = await supabaseClient
@@ -127,7 +138,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
             'is_default': true,
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', paymentMethodId)
+          .eq('id', parsedId)
           .select()
           .single();
 
@@ -146,17 +157,24 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
     String? parkingSessionId,
   }) async {
     try {
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
+      final parsedPaymentMethodId = int.tryParse(paymentMethodId);
+      final parsedReservationId = int.tryParse(reservationId ?? '');
+      final parsedSessionId = int.tryParse(parkingSessionId ?? '');
       // Create payment record
       final response = await supabaseClient
           .from('payments')
           .insert({
-            'user_id': userId,
-            'payment_method_id': paymentMethodId,
-            'amount': amount,
+            'user_id': dbUserId,
+            'payment_method_id': parsedPaymentMethodId,
+            'payment_method': parsedPaymentMethodId != null
+                ? 'card'
+                : paymentMethodId,
+            'amount': amount.round(),
             'currency': 'LKR',
-            'status': 'processing',
-            'reservation_id': reservationId,
-            'parking_session_id': parkingSessionId,
+            'payment_status': 'pending',
+            'reservation_id': parsedReservationId ?? reservationId,
+            'session_id': parsedSessionId ?? parkingSessionId,
           })
           .select()
           .single();
@@ -166,9 +184,8 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
       final completedResponse = await supabaseClient
           .from('payments')
           .update({
-            'status': 'completed',
-            'completed_at': DateTime.now().toIso8601String(),
-            'transaction_id': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
+            'payment_status': 'completed',
+            'transaction_ref': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
           })
           .eq('id', response['id'])
           .select()
@@ -183,10 +200,11 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
   @override
   Future<List<PaymentModel>> getPaymentHistory(String userId) async {
     try {
+      final dbUserId = await getUserIdFromAuth(supabaseClient, userId);
       final response = await supabaseClient
           .from('payments')
           .select()
-          .eq('user_id', userId)
+          .eq('user_id', dbUserId)
           .order('created_at', ascending: false);
 
       return (response as List)
