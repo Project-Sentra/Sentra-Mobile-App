@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +29,7 @@ class ParkingFacilitiesPage extends StatefulWidget {
 
 class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
   final _searchController = TextEditingController();
+  Timer? _slotRefreshTimer;
 
   @override
   void initState() {
@@ -43,8 +45,22 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
 
   @override
   void dispose() {
+    _slotRefreshTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _startSlotRefresh(ParkingBloc bloc, int locationId) {
+    _slotRefreshTimer?.cancel();
+    _slotRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => bloc.add(FetchSpotsByLocation(locationId)),
+    );
+  }
+
+  void _stopSlotRefresh() {
+    _slotRefreshTimer?.cancel();
+    _slotRefreshTimer = null;
   }
 
   @override
@@ -85,6 +101,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
             IconButton(
               icon: const Icon(Icons.arrow_back, color: AppColors.primary),
               onPressed: () {
+                _stopSlotRefresh();
                 context.read<ParkingBloc>().add(const BackToLocations());
               },
             ),
@@ -330,6 +347,14 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
 
   // ========== SLOTS VIEW ==========
   Widget _buildSlotsView(BuildContext context, ParkingState state) {
+    // Activate auto-refresh when viewing spots
+    if (state.selectedLocation != null && _slotRefreshTimer == null) {
+      _startSlotRefresh(
+        context.read<ParkingBloc>(),
+        state.selectedLocation!.id,
+      );
+    }
+
     if (state.status == ParkingStatus.loadingSpots) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -354,7 +379,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
           ),
         ),
         const SizedBox(height: 16),
-        // Slots grid
+        // Slots grid with pull-to-refresh
         Expanded(
           child: state.spots.isEmpty
               ? Center(
@@ -366,7 +391,20 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
                     ),
                   ),
                 )
-              : _buildSpotGrid(context, state.spots),
+              : RefreshIndicator(
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.cardDark,
+                  onRefresh: () async {
+                    if (state.selectedLocation != null) {
+                      context.read<ParkingBloc>().add(
+                        FetchSpotsByLocation(state.selectedLocation!.id),
+                      );
+                      // Wait a moment for the state to update
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    }
+                  },
+                  child: _buildSpotGrid(context, state.spots),
+                ),
         ),
       ],
     );

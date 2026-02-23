@@ -11,10 +11,6 @@ class ActiveSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = DateTime.now().difference(session.entryTime);
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -100,7 +96,9 @@ class ActiveSessionCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Spot: ${session.spotName}',
+                        session.facilityName != null
+                            ? '${session.facilityName} – ${session.spotName}'
+                            : 'Spot: ${session.spotName}',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -109,12 +107,45 @@ class ActiveSessionCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        'Vehicle: ${session.plateNumber}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Vehicle: ${session.plateNumber}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          if (session.sessionType != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: session.sessionType == 'reservation'
+                                    ? AppColors.primary.withValues(alpha: 0.15)
+                                    : AppColors.textSecondary.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                session.sessionType == 'reservation'
+                                    ? 'Reserved'
+                                    : 'Walk-in',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                  color: session.sessionType == 'reservation'
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -169,7 +200,7 @@ class ActiveSessionCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${hours}h ${minutes}m',
+                          session.formattedDuration,
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -193,7 +224,7 @@ class ActiveSessionCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _calculateEstCost(duration),
+                          session.formattedAmount,
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -214,12 +245,5 @@ class ActiveSessionCard extends StatelessWidget {
 
   String _formatTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _calculateEstCost(Duration duration) {
-    // Assume LKR 100 per hour for estimation
-    final hours = duration.inMinutes / 60;
-    final cost = hours * 100;
-    return 'LKR ${cost.toStringAsFixed(0)}';
   }
 }

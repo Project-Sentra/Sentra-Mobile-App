@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,11 +22,17 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Timer? _activeSessionTimer;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Refresh active sessions every 30 seconds for live cost/duration
+    _activeSessionTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => setState(() {}), // Trigger rebuild so live getters recalculate
+    );
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -37,6 +44,7 @@ class _HistoryPageState extends State<HistoryPage>
 
   @override
   void dispose() {
+    _activeSessionTimer?.cancel();
     _tabController.dispose();
     super.dispose();
   }

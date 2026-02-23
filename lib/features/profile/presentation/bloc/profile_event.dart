@@ -25,6 +25,21 @@ class FetchUserSessions extends ProfileEvent {
   List<Object?> get props => [plateNumber];
 }
 
+class UpdateUserProfile extends ProfileEvent {
+  final String userId;
+  final String? fullName;
+  final String? avatarUrl;
+
+  const UpdateUserProfile({
+    required this.userId,
+    this.fullName,
+    this.avatarUrl,
+  });
+
+  @override
+  List<Object?> get props => [userId, fullName, avatarUrl];
+}
+
 class SignOutRequested extends ProfileEvent {
   const SignOutRequested();
 }

@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../../parking/domain/entities/parking_session.dart';
 import '../../domain/entities/user_profile.dart';
 
-enum ProfileStatus { initial, loading, loaded, error }
+enum ProfileStatus { initial, loading, loaded, updating, updated, error }
 
 class ProfileState extends Equatable {
   final ProfileStatus status;
