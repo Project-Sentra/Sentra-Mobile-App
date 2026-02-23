@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_header.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../domain/entities/user_profile.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -123,37 +124,37 @@ class _ProfilePageState extends State<ProfilePage> {
                             _buildMenuItem(
                               icon: Icons.person_outline,
                               title: 'Edit Profile',
-                              onTap: () {},
+                              onTap: () =>
+                                  _navigateToEditProfile(context, profile),
                             ),
                             _buildMenuItem(
                               icon: Icons.history,
                               title: 'Reservation History',
-                              onTap: () {},
+                              onTap: () => context.go('/history'),
                             ),
                             _buildMenuItem(
                               icon: Icons.payment_outlined,
                               title: 'Payment Methods',
-                              onTap: () {},
+                              onTap: () =>
+                                  context.push('/profile/payment-methods'),
                             ),
                             _buildMenuItem(
                               icon: Icons.notifications_outlined,
                               title: 'Notifications',
-                              onTap: () {},
+                              onTap: () =>
+                                  context.push('/profile/notifications'),
                             ),
                             _buildMenuItem(
                               icon: Icons.help_outline,
                               title: 'Help & Support',
-                              onTap: () {},
+                              onTap: () =>
+                                  context.push('/profile/help-support'),
                             ),
                             const SizedBox(height: 16),
                             _buildMenuItem(
                               icon: Icons.logout,
                               title: 'Sign Out',
-                              onTap: () {
-                                context.read<AuthBloc>().add(
-                                  const AuthSignOutRequested(),
-                                );
-                              },
+                              onTap: () => _showSignOutConfirmation(context),
                               isDestructive: true,
                             ),
                             const SizedBox(height: 100),
@@ -254,13 +255,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      profile?.fullName ?? 'User',
+                      profile?.email ?? '',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
                         height: 1.3,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -310,6 +312,64 @@ class _ProfilePageState extends State<ProfilePage> {
             Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 22),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToEditProfile(
+    BuildContext context,
+    UserProfile? profile,
+  ) async {
+    final result = await context.push<bool>('/profile/edit', extra: profile);
+    // Refresh profile if changes were saved
+    if (result == true && mounted) {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        context.read<ProfileBloc>().add(FetchUserProfile(userId));
+      }
+    }
+  }
+
+  void _showSignOutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Sign Out',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to sign out?',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<AuthBloc>().add(const AuthSignOutRequested());
+            },
+            child: Text(
+              'Sign Out',
+              style: GoogleFonts.poppins(color: AppColors.error),
+            ),
+          ),
+        ],
       ),
     );
   }

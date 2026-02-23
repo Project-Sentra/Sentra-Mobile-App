@@ -29,6 +29,7 @@ import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_user_profile_usecase.dart';
 import '../../features/profile/domain/usecases/get_user_reservations_usecase.dart'
     show GetUserSessionsUseCase;
+import '../../features/profile/domain/usecases/update_profile_usecase.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 
 // Vehicles feature
@@ -148,11 +149,15 @@ Future<void> initializeDependencies() async {
   // Use cases
   sl.registerLazySingleton(() => GetUserProfileUseCase(sl()));
   sl.registerLazySingleton(() => GetUserSessionsUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
 
   // Bloc
   sl.registerFactory(
-    () =>
-        ProfileBloc(getUserProfileUseCase: sl(), getUserSessionsUseCase: sl()),
+    () => ProfileBloc(
+      getUserProfileUseCase: sl(),
+      getUserSessionsUseCase: sl(),
+      updateProfileUseCase: sl(),
+    ),
   );
 
   // ========== Vehicles Feature ==========

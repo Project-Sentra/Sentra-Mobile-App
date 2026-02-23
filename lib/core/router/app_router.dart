@@ -7,6 +7,11 @@ import '../../features/auth/presentation/pages/sign_in_page.dart';
 import '../../features/auth/presentation/pages/sign_up_page.dart';
 import '../../features/parking/presentation/pages/parking_facilities_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/profile/presentation/pages/payment_methods_page.dart';
+import '../../features/profile/presentation/pages/notifications_page.dart';
+import '../../features/profile/presentation/pages/help_support_page.dart';
+import '../../features/profile/domain/entities/user_profile.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/vehicles/presentation/pages/vehicles_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
@@ -67,6 +72,24 @@ class AppRouter {
             builder: (context, state) => const ProfilePage(),
           ),
         ],
+      ),
+      // Routes outside ShellRoute (full-screen pages)
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) =>
+            EditProfilePage(profile: state.extra as UserProfile?),
+      ),
+      GoRoute(
+        path: '/profile/payment-methods',
+        builder: (context, state) => const PaymentMethodsPage(),
+      ),
+      GoRoute(
+        path: '/profile/notifications',
+        builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/profile/help-support',
+        builder: (context, state) => const HelpSupportPage(),
       ),
     ],
   );

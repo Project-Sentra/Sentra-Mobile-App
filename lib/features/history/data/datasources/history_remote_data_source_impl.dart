@@ -11,9 +11,10 @@ class HistoryRemoteDataSourceImpl implements HistoryRemoteDataSource {
   @override
   Future<List<ParkingSessionModel>> getParkingHistory() async {
     try {
+      // Join with facilities to get facility name and hourly rate
       final response = await supabaseClient
           .from('parking_sessions')
-          .select()
+          .select('*, facilities(name, hourly_rate)')
           .order('entry_time', ascending: false);
 
       return (response as List)
@@ -27,9 +28,10 @@ class HistoryRemoteDataSourceImpl implements HistoryRemoteDataSource {
   @override
   Future<List<ParkingSessionModel>> getActiveSessions() async {
     try {
+      // Join with facilities to get facility name and hourly rate
       final response = await supabaseClient
           .from('parking_sessions')
-          .select()
+          .select('*, facilities(name, hourly_rate)')
           .isFilter('exit_time', null)
           .order('entry_time', ascending: false);
 

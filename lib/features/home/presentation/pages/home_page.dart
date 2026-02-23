@@ -37,7 +37,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildNavItem(
               context,
-              icon: Icons.confirmation_number_outlined,
+              icon: Icons.car_rental_outlined,
               path: '/vehicles',
               isSelected: _isSelected(context, '/vehicles'),
             ),
@@ -80,7 +80,7 @@ class HomePage extends StatelessWidget {
           shape: BoxShape.circle,
           border: isSelected
               ? null
-              : Border.all(color: AppColors.primary, width: 2),
+              : Border.all(color: AppColors.primary, width: 0.001),
         ),
         child: Center(
           child: Text(
