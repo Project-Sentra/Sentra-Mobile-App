@@ -91,6 +91,10 @@ class AppRouter {
         path: '/profile/help-support',
         builder: (context, state) => const HelpSupportPage(),
       ),
+      GoRoute(
+        path: '/profile/reservations',
+        builder: (context, state) => const MyBookingsPage(showBackButton: true),
+      ),
     ],
   );
 }
