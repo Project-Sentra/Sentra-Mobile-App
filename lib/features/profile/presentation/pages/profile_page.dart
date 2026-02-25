@@ -130,7 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             _buildMenuItem(
                               icon: Icons.history,
                               title: 'Reservation History',
-                              onTap: () => context.go('/history'),
+                              onTap: () =>
+                                  context.push('/profile/reservations'),
                             ),
                             _buildMenuItem(
                               icon: Icons.payment_outlined,

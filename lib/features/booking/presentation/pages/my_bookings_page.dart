@@ -12,7 +12,9 @@ import '../bloc/booking_event.dart';
 import '../bloc/booking_state.dart';
 
 class MyBookingsPage extends StatefulWidget {
-  const MyBookingsPage({super.key});
+  final bool showBackButton;
+
+  const MyBookingsPage({super.key, this.showBackButton = false});
 
   @override
   State<MyBookingsPage> createState() => _MyBookingsPageState();
@@ -60,7 +62,10 @@ class _MyBookingsPageState extends State<MyBookingsPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              const AppHeader(title: 'My Bookings'),
+              AppHeader(
+                title: 'My Bookings',
+                showBackButton: widget.showBackButton,
+              ),
               const SizedBox(height: 16),
               _buildTabBar(),
               const SizedBox(height: 16),
