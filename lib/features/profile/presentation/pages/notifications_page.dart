@@ -247,7 +247,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
             inactiveThumbColor: AppColors.textSecondary,
             inactiveTrackColor: AppColors.surfaceLight,
