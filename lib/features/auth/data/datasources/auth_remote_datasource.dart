@@ -1,3 +1,4 @@
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../../../../core/utils/user_helpers.dart';
@@ -54,7 +55,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'full_name':
             userRecord['full_name'] ??
             response.user!.userMetadata?['full_name'],
-        'avatar_url': userRecord['profile_image'] ??
+        'avatar_url':
+            userRecord['profile_image'] ??
             response.user!.userMetadata?['avatar_url'],
         'created_at': userRecord['created_at'] ?? response.user!.createdAt,
       });
@@ -95,7 +97,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'email': userRecord['email'] ?? email,
         'full_name': userRecord['full_name'] ?? fullName,
         'avatar_url': userRecord['profile_image'],
-        'created_at': userRecord['created_at'] ?? DateTime.now().toIso8601String(),
+        'created_at':
+            userRecord['created_at'] ?? DateTime.now().toIso8601String(),
       });
     } on AuthException {
       rethrow;
@@ -130,8 +133,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return UserModel.fromJson({
         'id': user.id,
         'email': userRecord['email'] ?? user.email,
-        'full_name':
-            userRecord['full_name'] ?? user.userMetadata?['full_name'],
+        'full_name': userRecord['full_name'] ?? user.userMetadata?['full_name'],
         'avatar_url':
             userRecord['profile_image'] ?? user.userMetadata?['avatar_url'],
         'created_at': userRecord['created_at'] ?? user.createdAt,
@@ -144,31 +146,54 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> signInWithGoogle() async {
     try {
-      final response = await supabaseClient.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.supabase.sentra://login-callback/',
+      // ── 1. Native Google Sign-In ──────────────────────────────────
+
+      const webClientId =
+          '865068215182-dcpc6efgm40shm6n9g0lfr9jel98ti3v.apps.googleusercontent.com';
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: webClientId,
       );
 
-      if (!response) {
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw const AuthException('Google sign in was cancelled');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null) {
+        throw const AuthException('Failed to get Google ID token');
+      }
+
+      // ── 2. Exchange token with Supabase ───────────────────────────
+      final response = await supabaseClient.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      if (response.user == null) {
         throw const AuthException('Google sign in failed');
       }
 
-      // Wait for auth state change
-      final user = supabaseClient.auth.currentUser;
-      if (user == null) {
-        throw const AuthException('Google sign in failed');
-      }
+      final user = response.user!;
 
+      // ── 3. Upsert local DB record ────────────────────────────────
       final userRecord = await getOrCreateUserRecord(
         supabaseClient,
         authUserId: user.id,
         email: user.email,
         fullName:
             user.userMetadata?['full_name'] as String? ??
-            user.userMetadata?['name'] as String?,
+            user.userMetadata?['name'] as String? ??
+            googleUser.displayName,
         profileImage:
             user.userMetadata?['avatar_url'] as String? ??
-            user.userMetadata?['picture'] as String?,
+            user.userMetadata?['picture'] as String? ??
+            googleUser.photoUrl,
       );
 
       return UserModel(
@@ -177,12 +202,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         fullName:
             userRecord['full_name'] as String? ??
             user.userMetadata?['full_name'] as String? ??
-            user.userMetadata?['name'] as String?,
+            user.userMetadata?['name'] as String? ??
+            googleUser.displayName,
         avatarUrl:
             userRecord['profile_image'] as String? ??
             user.userMetadata?['avatar_url'] as String? ??
-            user.userMetadata?['picture'] as String?,
+            user.userMetadata?['picture'] as String? ??
+            googleUser.photoUrl,
       );
+    } on AuthException {
+      rethrow;
     } catch (e) {
       throw AuthException(e.toString());
     }
@@ -215,7 +244,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return UserModel(
         id: user.id,
         email: userRecord['email'] ?? user.email ?? '',
-        fullName: userRecord['full_name'] as String? ??
+        fullName:
+            userRecord['full_name'] as String? ??
             user.userMetadata?['full_name'] as String?,
       );
     } catch (e) {
