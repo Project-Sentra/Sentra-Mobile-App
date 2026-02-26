@@ -3,7 +3,7 @@ import '../models/reservation_model.dart';
 abstract class BookingRemoteDataSource {
   Future<List<ReservationModel>> getUserReservations(String userId);
   Future<List<ReservationModel>> getActiveReservations(String userId);
-  Future<ReservationModel> getReservationById(int id);
+  Future<ReservationModel> getReservationById(String id);
   Future<ReservationModel> createReservation({
     required String userId,
     String? vehicleId,
@@ -16,6 +16,6 @@ abstract class BookingRemoteDataSource {
     DateTime? endTime,
     double bookingFee,
   });
-  Future<ReservationModel> cancelReservation(int reservationId);
+  Future<ReservationModel> cancelReservation(String reservationId);
   Future<bool> isSpotAvailable(int spotId);
 }

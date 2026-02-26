@@ -15,6 +15,7 @@ import '../bloc/parking_state.dart';
 import '../../../booking/presentation/bloc/booking_bloc.dart';
 import '../../../booking/presentation/bloc/booking_event.dart';
 import '../../../booking/presentation/bloc/booking_state.dart';
+import '../../../payment/domain/usecases/process_payment_usecase.dart';
 import '../../../vehicles/domain/entities/vehicle.dart';
 import '../../../vehicles/presentation/bloc/vehicle_bloc.dart';
 import '../../../vehicles/presentation/bloc/vehicle_event.dart';
@@ -588,6 +589,32 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
   final DateTime _startTime = DateTime.now();
   int _durationHours = 1;
   bool _useManualPlate = false;
+  bool _isPaying = false;
+
+  Widget _buildButtonLoading(String label) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   void dispose() {
@@ -598,19 +625,93 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<BookingBloc, BookingState>(
-      listener: (context, state) {
-        if (state.bookingSuccess) {
-          Navigator.pop(context);
-          widget.onBookingSuccess();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Booking confirmed for ${widget.spot.slotName}!',
-                style: GoogleFonts.poppins(),
-              ),
-              backgroundColor: Colors.green,
+      listener: (context, state) async {
+        if (state.bookingSuccess && !_isPaying) {
+          FocusScope.of(context).unfocus();
+
+          final reservation = state.lastCreatedReservation;
+          final userId = Supabase.instance.client.auth.currentUser?.id;
+          if (reservation == null || userId == null) {
+            context.read<BookingBloc>().add(ResetBookingSuccess());
+            return;
+          }
+
+          final bookingBloc = context.read<BookingBloc>();
+          final messenger = ScaffoldMessenger.of(context);
+          final navigator = Navigator.of(context);
+          final supabaseClient = Supabase.instance.client;
+          final slotName = widget.spot.slotName;
+          final onBookingSuccess = widget.onBookingSuccess;
+
+          setState(() {
+            _isPaying = true;
+          });
+
+          final bookingFee = widget.location.pricePerHour * _durationHours;
+
+          final paymentResult = await sl<ProcessPaymentUseCase>()(
+            ProcessPaymentParams(
+              userId: userId,
+              paymentMethodId: 'stripe',
+              amount: bookingFee,
+              reservationId: reservation.id,
             ),
           );
+
+          if (!mounted) return;
+
+          await paymentResult.fold(
+            (failure) async {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    failure.message,
+                    style: GoogleFonts.poppins(),
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+
+              // Payment failed/cancelled -> cancel reservation to release spot
+              bookingBloc.add(
+                    CancelReservation(
+                      reservationId: reservation.id,
+                      userId: userId,
+                    ),
+                  );
+
+              bookingBloc.add(ResetBookingSuccess());
+            },
+            (_) async {
+              // Mark reservation as paid/confirmed (best-effort)
+              try {
+                await supabaseClient
+                    .from('reservations')
+                    .update({'payment_status': 'completed', 'status': 'confirmed'})
+                    .eq('id', reservation.id);
+              } catch (_) {}
+
+              bookingBloc.add(ResetBookingSuccess());
+
+              navigator.pop();
+              onBookingSuccess();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Payment successful. Booking confirmed for $slotName!',
+                    style: GoogleFonts.poppins(),
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+          );
+
+          if (context.mounted) {
+            setState(() {
+              _isPaying = false;
+            });
+          }
         } else if (state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -874,14 +975,10 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 // Book button
                 BlocBuilder<BookingBloc, BookingState>(
                   builder: (context, bookingState) {
-                    final canBook =
-                        _selectedVehicle != null ||
-                        (_useManualPlate && _plateController.text.isNotEmpty);
-
                     return SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: canBook && !bookingState.isLoading
+                        onPressed: !bookingState.isLoading && !_isPaying
                             ? () => _createBooking(context)
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -895,21 +992,16 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                               .withValues(alpha: 0.3),
                         ),
                         child: bookingState.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                'Confirm Booking',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                            ? _buildButtonLoading('Creating reservation...')
+                            : _isPaying
+                                ? _buildButtonLoading('Opening payment...')
+                                : Text(
+                                    'Confirm Booking',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                       ),
                     );
                   },
@@ -1016,6 +1108,7 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
     return TextField(
       controller: _plateController,
       textCapitalization: TextCapitalization.characters,
+      onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         hintText: 'Enter plate number (e.g., ABC-1234)',
         hintStyle: GoogleFonts.poppins(color: AppColors.textSecondary),
@@ -1031,7 +1124,6 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
         ),
       ),
       style: GoogleFonts.poppins(color: AppColors.textPrimary),
-      onChanged: (_) => setState(() {}),
     );
   }
 
@@ -1067,6 +1159,7 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
   }
 
   void _createBooking(BuildContext context) {
+    FocusScope.of(context).unfocus();
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -115,46 +115,6 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
     return enrichedLocations;
   }
 
-  Future<ParkingLocationModel> _createDefaultLocation() async {
-    // Create a virtual location from existing spots
-    final spotsResponse = await supabaseClient
-        .from('parking_spots')
-        .select('id, is_occupied, is_reserved')
-        .eq('is_active', true);
-
-    // Get active reservations
-    final activeReservations = await supabaseClient
-        .from('reservations')
-        .select('spot_id')
-        .inFilter('status', ['pending', 'confirmed', 'checked_in']);
-
-    final reservedSpotIds = (activeReservations as List)
-        .map((r) => r['spot_id'])
-        .toSet();
-
-    final spots = spotsResponse as List;
-    final totalSlots = spots.length;
-    final availableSlots = spots
-        .where(
-          (s) =>
-              s['is_occupied'] == false &&
-              s['is_reserved'] != true &&
-              !reservedSpotIds.contains(s['id']),
-        )
-        .length;
-
-    return ParkingLocationModel(
-      id: 0,
-      name: 'Main Parking',
-      address: 'Default Location',
-      pricePerHour: 100,
-      currency: 'LKR',
-      isActive: true,
-      totalSlots: totalSlots,
-      availableSlots: availableSlots,
-      occupiedSlots: totalSlots - availableSlots,
-    );
-  }
 
   @override
   Future<ParkingLocationModel> getParkingLocationById(int id) async {
