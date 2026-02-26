@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' as stripe;
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/user_helpers.dart';
+import '../../../../core/env/supabase.dart' as app_env;
 import '../../../../core/env/stripe.dart';
 import '../../domain/entities/payment_method.dart';
 import '../models/payment_method_model.dart';
@@ -326,7 +327,10 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
 
       // Some setups (notably with publishable keys) may not attach the user JWT
       // to Edge Function calls automatically. Provide it explicitly.
-      final authHeaders = <String, String>{
+      // Also include `apikey` explicitly. Depending on the client version,
+      // providing custom headers can override defaults and accidentally drop it.
+      final functionHeaders = <String, String>{
+        'apikey': app_env.supabaseKey,
         if (accessToken != null && accessToken.isNotEmpty)
           'Authorization': 'Bearer $accessToken',
       };
@@ -343,7 +347,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
           functionResponse = await supabaseClient.functions.invoke(
             fnName,
             body: invokeBody,
-            headers: authHeaders.isEmpty ? null : authHeaders,
+            headers: functionHeaders,
           );
           lastInvokeError = null;
           break;
@@ -353,10 +357,14 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
             // Supabase returns "Invalid JWT" when no/expired token is provided.
             final issuer = accessToken == null ? null : _jwtIssuer(accessToken);
             final issuerHint = issuer == null ? '' : ' token_iss=$issuer';
+            final configuredProject = app_env.supabaseUrl;
+            final configuredHint = ' configured_supabase_url=$configuredProject';
+            final sameProject = issuer != null && issuer.contains(configuredProject);
             throw ServerException(
-              'Unauthorized (Invalid JWT).$issuerHint\n'
-              'This usually means you are signed into a DIFFERENT Supabase project than the one hosting the Edge Function, '
-              'or the project key in the app is wrong. Please verify Supabase URL + anon key, then sign in again.',
+              'Unauthorized (Invalid JWT).$issuerHint$configuredHint\n'
+              '${sameProject ? 'JWT issuer matches the configured project. ' : ''}'
+              'Check that the app uses the Anon public key (eyJ...) for this project, then sign out/in and retry. '
+              'If it still fails, disable "Verify JWT" for the Edge Function (or redeploy with no-verify-jwt).',
             );
           }
           final msg = e.toString().toLowerCase();
