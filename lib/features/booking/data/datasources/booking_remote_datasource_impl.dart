@@ -47,12 +47,13 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   }
 
   @override
-  Future<ReservationModel> getReservationById(int id) async {
+  Future<ReservationModel> getReservationById(String id) async {
     try {
+      final parsedId = int.tryParse(id) ?? id;
       final response = await supabaseClient
           .from('reservations')
           .select('*, facilities(name), parking_spots(spot_name)')
-          .eq('id', id)
+          .eq('id', parsedId)
           .single();
 
       return ReservationModel.fromJson(response);
@@ -158,15 +159,16 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   }
 
   @override
-  Future<ReservationModel> cancelReservation(int reservationId) async {
+  Future<ReservationModel> cancelReservation(String reservationId) async {
     try {
+      final parsedId = int.tryParse(reservationId) ?? reservationId;
       final response = await supabaseClient
           .from('reservations')
           .update({
             'status': 'cancelled',
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', reservationId)
+          .eq('id', parsedId)
           .select('*, facilities(name), parking_spots(spot_name)')
           .single();
 

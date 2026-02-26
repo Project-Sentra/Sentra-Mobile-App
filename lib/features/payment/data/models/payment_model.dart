@@ -45,13 +45,30 @@ class PaymentModel extends Payment {
 
   Map<String, dynamic> toJson() {
     final parsedMethodId = int.tryParse(paymentMethodId);
+    final normalizedMethod = (() {
+      final normalized = paymentMethodId.trim().toLowerCase();
+      if (normalized == 'cash') return 'cash';
+      // Stripe is the provider but the DB payment_method is typically 'card'.
+      if (normalized == 'stripe') return 'card';
+      if (normalized == 'card') return 'card';
+      // If this looks like a DB id (int/uuid), store method as 'card' to satisfy CHECK constraints.
+      final uuidRegex = RegExp(
+        r'^[0-9a-fA-F]{8}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{12}$',
+      );
+      if (parsedMethodId != null || uuidRegex.hasMatch(normalized)) return 'card';
+      return 'card';
+    })();
     return {
       'id': id,
       'user_id': userId,
       'reservation_id': reservationId,
       'session_id': parkingSessionId,
       'payment_method_id': parsedMethodId,
-      'payment_method': parsedMethodId != null ? 'card' : paymentMethodId,
+      'payment_method': normalizedMethod,
       'amount': amount,
       'currency': currency,
       'payment_status': _paymentStatusToString(status),

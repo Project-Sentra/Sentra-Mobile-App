@@ -321,12 +321,18 @@ class _ProfilePageState extends State<ProfilePage> {
     BuildContext context,
     UserProfile? profile,
   ) async {
+    final profileBloc = context.read<ProfileBloc>();
+    final supabaseClient = Supabase.instance.client;
     final result = await context.push<bool>('/profile/edit', extra: profile);
     // Refresh profile if changes were saved
-    if (result == true && mounted) {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (result == true) {
+      if (!context.mounted) {
+        return;
+      }
+
+      final userId = supabaseClient.auth.currentUser?.id;
       if (userId != null) {
-        context.read<ProfileBloc>().add(FetchUserProfile(userId));
+        profileBloc.add(FetchUserProfile(userId));
       }
     }
   }

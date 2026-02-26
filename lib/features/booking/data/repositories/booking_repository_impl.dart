@@ -41,9 +41,7 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<Either<Failure, Reservation>> getReservationById(String id) async {
     try {
-      final reservation = await remoteDataSource.getReservationById(
-        int.parse(id),
-      );
+      final reservation = await remoteDataSource.getReservationById(id);
       return Right(reservation);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -92,7 +90,7 @@ class BookingRepositoryImpl implements BookingRepository {
   ) async {
     try {
       final reservation = await remoteDataSource.cancelReservation(
-        int.parse(reservationId),
+        reservationId,
       );
       return Right(reservation);
     } on ServerException catch (e) {
