@@ -149,9 +149,9 @@ class _SignUpPageState extends State<SignUpPage> {
                         // Divider
                         _buildDivider(),
                         const SizedBox(height: 24),
-                        // Google Sign In
+                        // Google Sign Up
                         _buildSocialButton(
-                          text: 'SIGN IN WITH GOOGLE',
+                          text: 'SIGN UP WITH GOOGLE',
                           icon: Icons.g_mobiledata_rounded,
                           isGoogle: true,
                           onPressed: () {
@@ -161,9 +161,9 @@ class _SignUpPageState extends State<SignUpPage> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        // Apple Sign In
+                        // Apple Sign Up
                         _buildSocialButton(
-                          text: 'SIGN IN WITH APPLE',
+                          text: 'SIGN UP WITH APPLE',
                           icon: Icons.apple,
                           isGoogle: false,
                           onPressed: () {
