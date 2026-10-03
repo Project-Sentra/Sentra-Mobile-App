@@ -149,7 +149,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // ── 1. Native Google Sign-In ──────────────────────────────────
 
       const webClientId =
-          '865068215182-dcpc6efgm40shm6n9g0lfr9jel98ti3v.apps.googleusercontent.com';
+          '300549971629-tk8cmfoh5jl302863ru54sdnbbcuhs9c.apps.googleusercontent.com';
 
       final GoogleSignIn googleSignIn = GoogleSignIn(
         serverClientId: webClientId,
