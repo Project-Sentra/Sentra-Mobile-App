@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/user_helpers.dart';
 import '../models/vehicle_model.dart';
 import 'vehicle_remote_data_source.dart';
+import '../../../../core/utils/plate_utils.dart';
 
 class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
   final SupabaseClient supabaseClient;
@@ -62,7 +63,7 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
           .from('vehicles')
           .insert({
             'user_id': dbUserId,
-            'plate_number': licensePlate.toUpperCase(),
+            'plate_number': normalizePlate(licensePlate),
             'vehicle_type': vehicleType,
             'color': vehicleColor,
             'make': vehicleMake,
@@ -94,7 +95,7 @@ class VehicleRemoteDataSourceImpl implements VehicleRemoteDataSource {
       final updateData = <String, dynamic>{};
 
       if (licensePlate != null) {
-        updateData['plate_number'] = licensePlate.toUpperCase();
+        updateData['plate_number'] = normalizePlate(licensePlate);
       }
       if (vehicleType != null) updateData['vehicle_type'] = vehicleType;
       if (vehicleColor != null) updateData['color'] = vehicleColor;

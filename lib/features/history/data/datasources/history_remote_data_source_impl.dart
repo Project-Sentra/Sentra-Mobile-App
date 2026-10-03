@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/parking_session_model.dart';
 import 'history_remote_data_source.dart';
+import '../../../../core/utils/plate_utils.dart';
 
 class HistoryRemoteDataSourceImpl implements HistoryRemoteDataSource {
   final SupabaseClient supabaseClient;
@@ -83,7 +84,7 @@ class HistoryRemoteDataSourceImpl implements HistoryRemoteDataSource {
       final response = await supabaseClient
           .from('parking_sessions')
           .select()
-          .ilike('plate_number', '%$plateNumber%')
+          .ilike('plate_number', '%${normalizePlate(plateNumber)}%')
           .order('entry_time', ascending: false);
 
       return (response as List)

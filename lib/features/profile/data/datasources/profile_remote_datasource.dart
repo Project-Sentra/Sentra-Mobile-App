@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/user_helpers.dart';
 import '../../../history/data/models/parking_session_model.dart';
 import '../models/user_profile_model.dart';
+import '../../../../core/utils/plate_utils.dart';
 
 abstract class ProfileRemoteDataSource {
   Future<UserProfileModel> getUserProfile(String userId);
@@ -88,7 +89,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       final response = await supabaseClient
           .from('parking_sessions')
           .select()
-          .eq('plate_number', plateNumber)
+          .eq('plate_number', normalizePlate(plateNumber))
           .order('created_at', ascending: false);
 
       return (response as List)

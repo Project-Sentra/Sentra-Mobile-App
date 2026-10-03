@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/user_helpers.dart';
 import '../models/reservation_model.dart';
 import 'booking_remote_datasource.dart';
+import '../../../../core/utils/plate_utils.dart';
 
 class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   final SupabaseClient supabaseClient;
@@ -83,7 +84,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
             .from('vehicles')
             .select('id')
             .eq('user_id', dbUserId)
-            .eq('plate_number', plateNumber.toUpperCase())
+            .eq('plate_number', normalizePlate(plateNumber))
             .maybeSingle();
         if (existingVehicle != null) {
           parsedVehicleId = existingVehicle['id'] as int?;
@@ -92,7 +93,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
               .from('vehicles')
               .insert({
                 'user_id': dbUserId,
-                'plate_number': plateNumber.toUpperCase(),
+                'plate_number': normalizePlate(plateNumber),
                 'vehicle_type': 'car',
                 'is_active': true,
               })
