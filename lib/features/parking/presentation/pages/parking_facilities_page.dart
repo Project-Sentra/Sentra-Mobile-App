@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../domain/entities/parking_slot.dart';
 import '../bloc/parking_bloc.dart';
 import '../bloc/parking_event.dart';
@@ -156,9 +157,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
 
   Widget _buildContent(BuildContext context, ParkingState state) {
     if (state.status == ParkingStatus.loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const FacilityListSkeleton();
     }
 
     if (state.status == ParkingStatus.error) {
@@ -260,9 +259,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
     }
 
     if (state.status == ParkingStatus.loadingSpots) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const SpotGridSkeleton();
     }
 
     return Column(

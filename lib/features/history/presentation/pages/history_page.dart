@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../bloc/history_bloc.dart';
 import '../bloc/history_event.dart';
 import '../bloc/history_state.dart';
@@ -126,9 +127,7 @@ class _ActiveTab extends StatelessWidget {
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         if (state.isLoadingActive) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          );
+          return const HistoryListSkeleton(count: 2);
         }
 
         final activeSessions = state.activeSessions;
@@ -206,9 +205,7 @@ class _HistoryTab extends StatelessWidget {
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         if (state.isLoadingHistory) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          );
+          return const HistoryListSkeleton(count: 4);
         }
 
         if (state.parkingHistory.isEmpty) {
