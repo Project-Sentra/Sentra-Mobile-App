@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/sentra_logo.dart';
@@ -30,8 +31,8 @@ class _SignUpPageState extends State<SignUpPage> {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
     );
   }
@@ -53,17 +54,15 @@ class _SignUpPageState extends State<SignUpPage> {
           if (state.status == AuthStatus.authenticated) {
             context.go('/facilities');
           } else if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'An error occurred'),
-                backgroundColor: AppColors.error,
-              ),
+            ErrorSanitizer.showError(
+              context,
+              state.errorMessage ?? 'An error occurred',
             );
           }
         },
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: AppColors.white,
+            backgroundColor: AppColors.background,
             body: SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
@@ -75,20 +74,39 @@ class _SignUpPageState extends State<SignUpPage> {
                       children: [
                         const SizedBox(height: 60),
                         // Logo
-                        const SentraLogo(
-                          size: 120,
-                          isDark: true,
-                          showText: false,
-                        ),
+                        const SentraLogo(height: 52),
                         const SizedBox(height: 48),
                         // Sign up / Sign in toggle
                         _buildAuthToggle(isSignUp: true),
                         const SizedBox(height: 32),
+                        // Full name field
+                        _buildTextField(
+                          controller: _nameController,
+                          hintText: 'Full Name',
+                          keyboardType: TextInputType.name,
+                          prefixIcon: const Icon(
+                            Icons.person_outline,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your full name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         // Email field
                         _buildTextField(
                           controller: _emailController,
-                          hintText: 'email',
+                          hintText: 'Email',
                           keyboardType: TextInputType.emailAddress,
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your email';
@@ -96,18 +114,23 @@ class _SignUpPageState extends State<SignUpPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         // Password field
                         _buildTextField(
                           controller: _passwordController,
-                          hintText: 'password',
+                          hintText: 'Password',
                           obscureText: _obscurePassword,
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: AppColors.textHint,
+                              color: AppColors.textSecondary,
                               size: 20,
                             ),
                             onPressed: () {
@@ -126,7 +149,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                         // Sign Up button
                         _buildPrimaryButton(
                           text: 'Sign Up',
@@ -137,19 +160,17 @@ class _SignUpPageState extends State<SignUpPage> {
                                 AuthSignUpRequested(
                                   email: _emailController.text.trim(),
                                   password: _passwordController.text,
-                                  fullName: _nameController.text.trim().isEmpty
-                                      ? _emailController.text.split('@').first
-                                      : _nameController.text.trim(),
+                                  fullName: _nameController.text.trim(),
                                 ),
                               );
                             }
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                         // Divider
                         _buildDivider(),
-                        const SizedBox(height: 24),
-                        // Google Sign Up
+                        const SizedBox(height: 28),
+                        // Google Sign In
                         _buildSocialButton(
                           text: 'SIGN UP WITH GOOGLE',
                           icon: Icons.g_mobiledata_rounded,
@@ -161,7 +182,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        // Apple Sign Up
+                        // Apple Sign In
                         _buildSocialButton(
                           text: 'SIGN UP WITH APPLE',
                           icon: Icons.apple,
@@ -172,13 +193,13 @@ class _SignUpPageState extends State<SignUpPage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 48),
                         // Bottom Sentra text
-                        const SentraTextLogo(
+                        SentraTextLogo(
                           fontSize: 20,
-                          color: AppColors.textHint,
+                          color: AppColors.textSecondary.withValues(alpha: 0.4),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -194,7 +215,8 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget _buildAuthToggle({required bool isSignUp}) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.textDark, width: 1),
+        color: AppColors.cardDark,
+        border: Border.all(color: AppColors.cardBorder, width: 1),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -205,14 +227,14 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: isSignUp ? AppColors.textDark : Colors.transparent,
+                color: isSignUp ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Text(
                 'Sign up',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: isSignUp ? AppColors.white : AppColors.textDark,
-                  fontWeight: FontWeight.w500,
+                  color: isSignUp ? AppColors.textDark : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -222,14 +244,14 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: !isSignUp ? AppColors.textDark : Colors.transparent,
+                color: !isSignUp ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Text(
                 'Sign in',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: !isSignUp ? AppColors.white : AppColors.textDark,
-                  fontWeight: FontWeight.w500,
+                  color: !isSignUp ? AppColors.textDark : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -244,6 +266,7 @@ class _SignUpPageState extends State<SignUpPage> {
     required String hintText,
     TextInputType? keyboardType,
     bool obscureText = false,
+    Widget? prefixIcon,
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
@@ -252,24 +275,26 @@ class _SignUpPageState extends State<SignUpPage> {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textDark),
+      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+        hintStyle:
+            AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFFF5F5F5),
+        fillColor: AppColors.cardDark,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 16,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.cardBorder, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.cardBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
@@ -313,7 +338,9 @@ class _SignUpPageState extends State<SignUpPage> {
             : Text(
                 text,
                 style: AppTextStyles.buttonText.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: AppColors.textDark,
                 ),
               ),
       ),
@@ -323,15 +350,15 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.textHint, height: 1)),
+        const Expanded(child: Divider(color: AppColors.cardBorder, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'or',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textHint),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
           ),
         ),
-        const Expanded(child: Divider(color: AppColors.textHint, height: 1)),
+        const Expanded(child: Divider(color: AppColors.cardBorder, height: 1)),
       ],
     );
   }
@@ -348,9 +375,9 @@ class _SignUpPageState extends State<SignUpPage> {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.textDark,
-          side: const BorderSide(color: AppColors.textDark, width: 1),
+          backgroundColor: AppColors.cardDark,
+          foregroundColor: AppColors.textPrimary,
+          side: const BorderSide(color: AppColors.cardBorder, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
@@ -358,12 +385,12 @@ class _SignUpPageState extends State<SignUpPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: isGoogle ? 28 : 22, color: AppColors.textDark),
+            Icon(icon, size: isGoogle ? 28 : 22, color: AppColors.textPrimary),
             const SizedBox(width: 8),
             Text(
               text,
               style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textDark,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'error_sanitizer.dart';
 
 abstract class Failure extends Equatable {
   final String message;
@@ -10,21 +11,26 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure([super.message = 'Server error occurred']);
+  ServerFailure([String message = 'Server error occurred'])
+      : super(ErrorSanitizer.sanitize(message));
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure([super.message = 'Cache error occurred']);
+  CacheFailure([String message = 'Cache error occurred'])
+      : super(ErrorSanitizer.sanitize(message));
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([super.message = 'Network error occurred']);
+  NetworkFailure([String message = 'Network error occurred'])
+      : super(ErrorSanitizer.sanitize(message));
 }
 
 class AuthFailure extends Failure {
-  const AuthFailure([super.message = 'Authentication error occurred']);
+  AuthFailure([String message = 'Authentication error occurred'])
+      : super(ErrorSanitizer.sanitize(message));
 }
 
 class ValidationFailure extends Failure {
-  const ValidationFailure([super.message = 'Validation error occurred']);
+  ValidationFailure([String message = 'Validation error occurred'])
+      : super(ErrorSanitizer.sanitize(message));
 }

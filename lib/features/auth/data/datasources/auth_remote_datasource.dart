@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import '../../../../core/env/google.dart';
 import '../../../../core/utils/user_helpers.dart';
 
 abstract class AuthRemoteDataSource {
@@ -148,11 +149,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       // ── 1. Native Google Sign-In ──────────────────────────────────
 
-      const webClientId =
-          '865068215182-dcpc6efgm40shm6n9g0lfr9jel98ti3v.apps.googleusercontent.com';
-
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        serverClientId: webClientId,
+        serverClientId: googleWebClientId,
       );
 
       final googleUser = await googleSignIn.signIn();
