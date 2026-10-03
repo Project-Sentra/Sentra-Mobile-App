@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/sentra_logo.dart';
@@ -53,11 +54,9 @@ class _SignUpPageState extends State<SignUpPage> {
           if (state.status == AuthStatus.authenticated) {
             context.go('/facilities');
           } else if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'An error occurred'),
-                backgroundColor: AppColors.error,
-              ),
+            ErrorSanitizer.showError(
+              context,
+              state.errorMessage ?? 'An error occurred',
             );
           }
         },

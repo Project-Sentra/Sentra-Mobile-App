@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../booking/presentation/bloc/booking_bloc.dart';
 import '../../../booking/presentation/bloc/booking_event.dart';
@@ -106,15 +107,9 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
 
     await paymentResult.fold(
       (failure) async {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              failure.message,
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (context.mounted) {
+          ErrorSanitizer.showError(context, failure.message);
+        }
 
         // Payment failed/cancelled -> cancel reservation to release spot
         bookingBloc.add(
@@ -166,12 +161,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
           FocusScope.of(context).unfocus();
           await _handlePaymentFlow(context, state);
         } else if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!, style: GoogleFonts.poppins()),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ErrorSanitizer.showError(context, state.errorMessage!);
           context.read<BookingBloc>().add(ClearBookingError());
         }
       },

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../domain/entities/vehicle.dart';
@@ -77,14 +78,9 @@ class _VehiclesPageState extends State<VehiclesPage> {
                         ),
                       );
                     } else if (state.status == VehicleStatus.error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            state.errorMessage ?? 'An error occurred',
-                            style: GoogleFonts.poppins(),
-                          ),
-                          backgroundColor: AppColors.error,
-                        ),
+                      ErrorSanitizer.showError(
+                        context,
+                        state.errorMessage ?? 'An error occurred',
                       );
                     }
                   },
