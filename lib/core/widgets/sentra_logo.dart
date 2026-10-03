@@ -2,99 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
-/// Sentra Logo widget that displays the brand logo
-/// Can be used with dark or light variants
+/// Sentra Logo widget that displays the official brand logo.
+/// Defaults to crisp white (`AppColors.white`) for Sentra's dark theme.
 class SentraLogo extends StatelessWidget {
-  final double size;
+  final double? size;
+  final double? width;
+  final double? height;
+  final Color? color;
   final bool isDark;
   final bool showText;
 
   const SentraLogo({
     super.key,
-    this.size = 48,
-    this.isDark = true,
+    this.size,
+    this.width,
+    this.height,
+    this.color,
+    this.isDark = false,
     this.showText = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = isDark ? AppColors.textDark : AppColors.primary;
+    final logoColor = color ?? (isDark ? AppColors.textDark : AppColors.white);
+    final effectiveHeight = height ?? (size != null && size! > 80 ? 48.0 : (size ?? 42.0));
+    final effectiveWidth = width;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Logo icon - Globe with parking symbol
-        SizedBox(
-          width: size,
-          height: size,
-          child: Image.asset(
-            'assets/images/logoDark.png',
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              // Fallback to custom painted logo if image not found
-              return CustomPaint(
-                size: Size(size, size),
-                painter: _SentraLogoPainter(color: color),
-              );
-            },
-          ),
-        ),
-        if (showText) ...[
-          SizedBox(width: size * 0.25),
-          Text(
-            'Sentra',
-            style: GoogleFonts.poppins(
-              fontSize: size * 0.75,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: -1,
+    return Image.asset(
+      'assets/images/logoDark.png',
+      width: effectiveWidth,
+      height: effectiveHeight,
+      fit: BoxFit.contain,
+      color: logoColor,
+      colorBlendMode: BlendMode.srcIn,
+      errorBuilder: (context, error, stackTrace) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_parking_rounded,
+              color: logoColor,
+              size: effectiveHeight,
             ),
-          ),
-        ],
-      ],
+            const SizedBox(width: 8),
+            Text(
+              'Sentra',
+              style: GoogleFonts.poppins(
+                fontSize: effectiveHeight * 0.7,
+                fontWeight: FontWeight.w700,
+                color: logoColor,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
-}
-
-/// Custom painter for the Sentra logo (fallback)
-class _SentraLogoPainter extends CustomPainter {
-  final Color color;
-
-  _SentraLogoPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.06;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.42;
-
-    // Draw outer circle
-    canvas.drawCircle(center, radius, paint);
-
-    // Draw horizontal lines (latitude)
-    for (int i = -1; i <= 1; i++) {
-      final y = center.dy + (radius * 0.5 * i);
-      final dx = radius * (1 - (i.abs() * 0.3));
-      canvas.drawLine(
-        Offset(center.dx - dx, y),
-        Offset(center.dx + dx, y),
-        paint,
-      );
-    }
-
-    // Draw vertical arc (longitude)
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(rect, -1.57, 3.14, false, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Simple text-only Sentra logo
@@ -111,7 +75,7 @@ class SentraTextLogo extends StatelessWidget {
       style: GoogleFonts.poppins(
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
-        color: color ?? AppColors.textSecondary,
+        color: color ?? AppColors.white,
         letterSpacing: -0.5,
       ),
     );

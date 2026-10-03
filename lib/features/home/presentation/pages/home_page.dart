@@ -19,37 +19,50 @@ class HomePage extends StatelessWidget {
 
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(bottom: 24, left: 24, right: 24),
+      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
       child: Container(
         height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: AppColors.cardDark,
           borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppColors.cardBorder, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Parking - "P" icon (Figma design)
-            _buildParkingNavItem(
+            _buildNavItem(
               context,
+              icon: Icons.local_parking_rounded,
+              label: 'Parking',
               path: '/facilities',
               isSelected: _isSelected(context, '/facilities'),
             ),
             _buildNavItem(
               context,
-              icon: Icons.car_rental_outlined,
+              icon: Icons.directions_car_rounded,
+              label: 'Vehicles',
               path: '/vehicles',
               isSelected: _isSelected(context, '/vehicles'),
             ),
             _buildNavItem(
               context,
-              icon: Icons.calendar_today,
+              icon: Icons.confirmation_number_rounded,
+              label: 'Bookings',
               path: '/bookings',
               isSelected: _isSelected(context, '/bookings'),
             ),
             _buildNavItem(
               context,
-              icon: Icons.person_outline,
+              icon: Icons.person_rounded,
+              label: 'Profile',
               path: '/profile',
               isSelected: _isSelected(context, '/profile'),
             ),
@@ -64,57 +77,47 @@ class HomePage extends StatelessWidget {
     return currentPath.startsWith(path);
   }
 
-  // Special "P" text icon for parking
-  Widget _buildParkingNavItem(
-    BuildContext context, {
-    required String path,
-    required bool isSelected,
-  }) {
-    return GestureDetector(
-      onTap: () => context.go(path),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          shape: BoxShape.circle,
-          border: isSelected
-              ? null
-              : Border.all(color: AppColors.primary, width: 0.001),
-        ),
-        child: Center(
-          child: Text(
-            'P',
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? AppColors.textDark : AppColors.primary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildNavItem(
     BuildContext context, {
     required IconData icon,
+    required String label,
     required String path,
     required bool isSelected,
   }) {
     return GestureDetector(
       onTap: () => context.go(path),
-      child: Container(
-        width: 48,
-        height: 48,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: isSelected
+            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+            : const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Icon(
-          icon,
-          color: isSelected ? AppColors.textDark : AppColors.primary,
-          size: 26,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.textDark : AppColors.textSecondary,
+              size: 22,
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

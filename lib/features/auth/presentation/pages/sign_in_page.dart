@@ -72,11 +72,7 @@ class _SignInPageState extends State<SignInPage> {
                       children: [
                         const SizedBox(height: 60),
                         // Logo
-                        const SentraLogo(
-                          size: 120,
-                          isDark: false,
-                          showText: false,
-                        ),
+                        const SentraLogo(height: 52),
                         const SizedBox(height: 48),
                         // Sign up / Sign in toggle
                         _buildAuthToggle(isSignIn: true),
