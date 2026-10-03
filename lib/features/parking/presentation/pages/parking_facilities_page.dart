@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +27,8 @@ class ParkingFacilitiesPage extends StatefulWidget {
 
 class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
   final _searchController = TextEditingController();
-  Timer? _slotRefreshTimer;
+  RealtimeChannel? _realtimeChannel;
+  int? _subscribedLocationId;
 
   @override
   void initState() {
@@ -44,22 +44,55 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
 
   @override
   void dispose() {
-    _slotRefreshTimer?.cancel();
+    _unsubscribeFromRealtime();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _startSlotRefresh(ParkingBloc bloc, int locationId) {
-    _slotRefreshTimer?.cancel();
-    _slotRefreshTimer = Timer.periodic(
-      const Duration(seconds: 10),
-      (_) => bloc.add(FetchSpotsByLocation(locationId)),
-    );
+  void _subscribeToRealtime(ParkingBloc bloc, int locationId) {
+    if (_subscribedLocationId == locationId && _realtimeChannel != null) {
+      return;
+    }
+    _unsubscribeFromRealtime();
+    _subscribedLocationId = locationId;
+
+    final supabase = Supabase.instance.client;
+    _realtimeChannel = supabase.channel('realtime:facility:$locationId')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'parking_spots',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'facility_id',
+          value: locationId,
+        ),
+        callback: (_) {
+          bloc.add(RefreshSpotsSilently(locationId));
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'reservations',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'facility_id',
+          value: locationId,
+        ),
+        callback: (_) {
+          bloc.add(RefreshSpotsSilently(locationId));
+        },
+      )
+      ..subscribe();
   }
 
-  void _stopSlotRefresh() {
-    _slotRefreshTimer?.cancel();
-    _slotRefreshTimer = null;
+  void _unsubscribeFromRealtime() {
+    if (_realtimeChannel != null) {
+      Supabase.instance.client.removeChannel(_realtimeChannel!);
+      _realtimeChannel = null;
+      _subscribedLocationId = null;
+    }
   }
 
   @override
@@ -100,7 +133,7 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
             IconButton(
               icon: const Icon(Icons.arrow_back, color: AppColors.primary),
               onPressed: () {
-                _stopSlotRefresh();
+                _unsubscribeFromRealtime();
                 context.read<ParkingBloc>().add(const BackToLocations());
               },
             ),
@@ -217,9 +250,10 @@ class _ParkingFacilitiesPageState extends State<ParkingFacilitiesPage> {
   }
 
   Widget _buildSlotsView(BuildContext context, ParkingState state) {
-    // Activate auto-refresh when viewing spots
-    if (state.selectedLocation != null && _slotRefreshTimer == null) {
-      _startSlotRefresh(
+    // Activate Realtime subscription when viewing spots
+    if (state.selectedLocation != null &&
+        _subscribedLocationId != state.selectedLocation!.id) {
+      _subscribeToRealtime(
         context.read<ParkingBloc>(),
         state.selectedLocation!.id,
       );

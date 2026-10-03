@@ -22,6 +22,7 @@ class ParkingBloc extends Bloc<ParkingEvent, ParkingState> {
     on<SearchSpots>(_onSearchSpots);
     on<ClearSearch>(_onClearSearch);
     on<BackToLocations>(_onBackToLocations);
+    on<RefreshSpotsSilently>(_onRefreshSpotsSilently);
   }
 
   Future<void> _onFetchLocations(
@@ -102,6 +103,17 @@ class ParkingBloc extends Bloc<ParkingEvent, ParkingState> {
         spots: [],
         status: ParkingStatus.loaded,
       ),
+    );
+  }
+
+  Future<void> _onRefreshSpotsSilently(
+    RefreshSpotsSilently event,
+    Emitter<ParkingState> emit,
+  ) async {
+    final result = await getSpotsByLocationUseCase(event.locationId);
+    result.fold(
+      (_) {}, // Keep existing state if background refresh fails
+      (spots) => emit(state.copyWith(spots: spots)),
     );
   }
 }

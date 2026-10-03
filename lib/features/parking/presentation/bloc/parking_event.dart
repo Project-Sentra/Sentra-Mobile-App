@@ -46,3 +46,13 @@ class ClearSearch extends ParkingEvent {
 class BackToLocations extends ParkingEvent {
   const BackToLocations();
 }
+
+class RefreshSpotsSilently extends ParkingEvent {
+  final int locationId;
+
+  const RefreshSpotsSilently(this.locationId);
+
+  @override
+  List<Object?> get props => [locationId];
+}
+
