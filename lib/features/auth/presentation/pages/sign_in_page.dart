@@ -29,8 +29,8 @@ class _SignInPageState extends State<SignInPage> {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
     );
   }
@@ -61,7 +61,7 @@ class _SignInPageState extends State<SignInPage> {
         },
         builder: (context, state) {
           return Scaffold(
-            backgroundColor: AppColors.white,
+            backgroundColor: AppColors.background,
             body: SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
@@ -75,7 +75,7 @@ class _SignInPageState extends State<SignInPage> {
                         // Logo
                         const SentraLogo(
                           size: 120,
-                          isDark: true,
+                          isDark: false,
                           showText: false,
                         ),
                         const SizedBox(height: 48),
@@ -85,8 +85,13 @@ class _SignInPageState extends State<SignInPage> {
                         // Email field
                         _buildTextField(
                           controller: _emailController,
-                          hintText: 'email',
+                          hintText: 'Email',
                           keyboardType: TextInputType.emailAddress,
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your email';
@@ -94,18 +99,23 @@ class _SignInPageState extends State<SignInPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         // Password field
                         _buildTextField(
                           controller: _passwordController,
-                          hintText: 'password',
+                          hintText: 'Password',
                           obscureText: _obscurePassword,
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: AppColors.textHint,
+                              color: AppColors.textSecondary,
                               size: 20,
                             ),
                             onPressed: () {
@@ -121,7 +131,7 @@ class _SignInPageState extends State<SignInPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                         // Sign In button
                         _buildPrimaryButton(
                           text: 'Sign In',
@@ -137,10 +147,10 @@ class _SignInPageState extends State<SignInPage> {
                             }
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                         // Divider
                         _buildDivider(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
                         // Google Sign In
                         _buildSocialButton(
                           text: 'SIGN IN WITH GOOGLE',
@@ -164,13 +174,13 @@ class _SignInPageState extends State<SignInPage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 48),
                         // Bottom Sentra text
-                        const SentraTextLogo(
+                        SentraTextLogo(
                           fontSize: 20,
-                          color: AppColors.textHint,
+                          color: AppColors.textSecondary.withValues(alpha: 0.4),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -186,7 +196,8 @@ class _SignInPageState extends State<SignInPage> {
   Widget _buildAuthToggle({required bool isSignIn}) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.textDark, width: 1),
+        color: AppColors.cardDark,
+        border: Border.all(color: AppColors.cardBorder, width: 1),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -197,14 +208,14 @@ class _SignInPageState extends State<SignInPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: !isSignIn ? AppColors.textDark : Colors.transparent,
+                color: !isSignIn ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Text(
                 'Sign up',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: !isSignIn ? AppColors.white : AppColors.textDark,
-                  fontWeight: FontWeight.w500,
+                  color: !isSignIn ? AppColors.textDark : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -214,14 +225,14 @@ class _SignInPageState extends State<SignInPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: isSignIn ? AppColors.textDark : Colors.transparent,
+                color: isSignIn ? AppColors.primary : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Text(
                 'Sign in',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: isSignIn ? AppColors.white : AppColors.textDark,
-                  fontWeight: FontWeight.w500,
+                  color: isSignIn ? AppColors.textDark : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -236,6 +247,7 @@ class _SignInPageState extends State<SignInPage> {
     required String hintText,
     TextInputType? keyboardType,
     bool obscureText = false,
+    Widget? prefixIcon,
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
@@ -244,24 +256,26 @@ class _SignInPageState extends State<SignInPage> {
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
-      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textDark),
+      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+        hintStyle:
+            AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFFF5F5F5),
+        fillColor: AppColors.cardDark,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 16,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.cardBorder, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.cardBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
@@ -305,7 +319,9 @@ class _SignInPageState extends State<SignInPage> {
             : Text(
                 text,
                 style: AppTextStyles.buttonText.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: AppColors.textDark,
                 ),
               ),
       ),
@@ -315,15 +331,15 @@ class _SignInPageState extends State<SignInPage> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.textHint, height: 1)),
+        const Expanded(child: Divider(color: AppColors.cardBorder, height: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'or',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textHint),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
           ),
         ),
-        const Expanded(child: Divider(color: AppColors.textHint, height: 1)),
+        const Expanded(child: Divider(color: AppColors.cardBorder, height: 1)),
       ],
     );
   }
@@ -340,9 +356,9 @@ class _SignInPageState extends State<SignInPage> {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.textDark,
-          side: const BorderSide(color: AppColors.textDark, width: 1),
+          backgroundColor: AppColors.cardDark,
+          foregroundColor: AppColors.textPrimary,
+          side: const BorderSide(color: AppColors.cardBorder, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
@@ -350,12 +366,12 @@ class _SignInPageState extends State<SignInPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: isGoogle ? 28 : 22, color: AppColors.textDark),
+            Icon(icon, size: isGoogle ? 28 : 22, color: AppColors.textPrimary),
             const SizedBox(width: 8),
             Text(
               text,
               style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textDark,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -129,9 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             _buildMenuItem(
                               icon: Icons.history,
-                              title: 'Reservation History',
-                              onTap: () =>
-                                  context.push('/profile/reservations'),
+                              title: 'Parking & Booking History',
+                              onTap: () => context.push('/history'),
                             ),
                             _buildMenuItem(
                               icon: Icons.payment_outlined,
@@ -213,10 +213,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: ClipOval(
                       child: profile?.avatarUrl != null
-                          ? Image.network(
-                              profile!.avatarUrl!,
+                          ? CachedNetworkImage(
+                              imageUrl: profile!.avatarUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, e, s) => const Icon(
+                              placeholder: (context, url) => Container(
+                                color: AppColors.surfaceLight,
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => const Icon(
                                 Icons.person,
                                 size: 48,
                                 color: AppColors.textSecondary,

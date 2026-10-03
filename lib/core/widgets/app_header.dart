@@ -5,26 +5,27 @@ import '../theme/app_colors.dart';
 
 class AppHeader extends StatelessWidget {
   final String title;
-  final bool showBackButton;
+  final bool? showBackButton;
   final List<Widget>? actions;
 
   const AppHeader({
     super.key,
     required this.title,
-    this.showBackButton = false,
+    this.showBackButton,
     this.actions,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canBack = showBackButton ?? (Navigator.canPop(context));
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          if (showBackButton) ...[
+          if (canBack) ...[
             GestureDetector(
               onTap: () => context.pop(),
-              child: const Icon(Icons.arrow_back, color: AppColors.textDark),
+              child: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             ),
             const SizedBox(width: 12),
           ],
