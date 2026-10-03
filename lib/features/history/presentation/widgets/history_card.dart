@@ -172,6 +172,22 @@ class HistoryCard extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
+                if (onTap != null) ...[
+                  const Spacer(),
+                  Text(
+                    'Receipt',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                ],
               ],
             ),
           ],

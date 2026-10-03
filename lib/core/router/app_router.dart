@@ -15,6 +15,8 @@ import '../../features/profile/domain/entities/user_profile.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/vehicles/presentation/pages/vehicles_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
+import '../../features/history/presentation/pages/receipt_page.dart';
+import '../../features/parking/domain/entities/parking_session.dart';
 import '../../features/booking/presentation/pages/my_bookings_page.dart';
 
 class AppRouter {
@@ -90,6 +92,11 @@ class AppRouter {
       GoRoute(
         path: '/profile/help-support',
         builder: (context, state) => const HelpSupportPage(),
+      ),
+      GoRoute(
+        path: '/history/receipt',
+        builder: (context, state) =>
+            ReceiptPage(session: state.extra! as ParkingSession),
       ),
       GoRoute(
         path: '/profile/reservations',
