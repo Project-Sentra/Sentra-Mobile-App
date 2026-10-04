@@ -79,7 +79,12 @@ class ErrorSanitizer {
       return 'Server error. Please try again later.';
     }
 
-    // 4. Payment / Stripe Errors
+    // 4. Payment / Stripe / Edge Function Errors
+    if (lower.contains('edge function not found') ||
+        lower.contains('requested function was not found') ||
+        lower.contains('create-payment-intent')) {
+      return 'Payment service not deployed on Supabase (create-payment-intent 404).';
+    }
     if (lower.contains('stripeexception') ||
         (lower.contains('payment') && lower.contains('failed'))) {
       return 'Payment processing failed. Please try a different card or method.';
@@ -111,6 +116,7 @@ class ErrorSanitizer {
 
   /// Convenience method to display a styled error SnackBar with sanitized copy.
   static void showError(BuildContext context, dynamic error) {
+    debugPrint('[Sentra Error]: $error');
     final cleanMessage = sanitize(error);
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
