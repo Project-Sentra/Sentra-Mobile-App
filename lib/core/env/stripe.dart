@@ -3,7 +3,7 @@
 /// For production, do NOT hard-code secrets in the app.
 /// Only the publishable key belongs here.
 const stripePublishableKey =
-	'pk_test_51T4kYe3yuOh4QYXU1BIwIwnsaXtFuK73zZqeGszvAdq60UaLLjYX75UU5jx3EU4gnRtzfVbAcEk9p2aQc4314jP600AEkOt1SH';
+    'pk_test_51UMdFdIJmqn10DSTpSiEPrwfZJRuhqUdMUCHih8u4SBqmekfZOIetxyIEdzUCP3sCNzhvxYm4llI0J9cjRdTOhwZ00XHrFnWGq';
 
 /// Shown in Stripe PaymentSheet.
 const stripeMerchantDisplayName = 'Sentra Parking';

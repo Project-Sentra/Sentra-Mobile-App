@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../domain/entities/reservation.dart';
 import '../bloc/booking_bloc.dart';
 import '../bloc/booking_event.dart';
@@ -121,9 +122,7 @@ class _MyBookingsPageState extends State<MyBookingsPage>
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
         if (state.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          );
+          return const HistoryListSkeleton(count: 2);
         }
 
         if (state.errorMessage != null) {
@@ -167,9 +166,7 @@ class _MyBookingsPageState extends State<MyBookingsPage>
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
         if (state.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          );
+          return const HistoryListSkeleton(count: 4);
         }
 
         if (state.errorMessage != null) {

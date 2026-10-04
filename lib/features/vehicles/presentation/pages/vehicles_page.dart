@@ -7,6 +7,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../domain/entities/vehicle.dart';
 import '../bloc/vehicle_bloc.dart';
 import '../bloc/vehicle_event.dart';
@@ -86,11 +87,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                   },
                   builder: (context, state) {
                     if (state.status == VehicleStatus.loading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      );
+                      return const VehicleListSkeleton();
                     }
 
                     if (state.vehicles.isEmpty) {
