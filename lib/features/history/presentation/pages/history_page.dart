@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -222,7 +223,12 @@ class _HistoryTab extends StatelessWidget {
             final session = state.parkingHistory[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: HistoryCard(session: session),
+              child: HistoryCard(
+                session: session,
+                onTap: session.isCompleted
+                    ? () => context.push('/history/receipt', extra: session)
+                    : null,
+              ),
             );
           },
         );
