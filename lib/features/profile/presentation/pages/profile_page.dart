@@ -136,6 +136,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         onTap: () => context.push('/history'),
                       ),
                       _buildMenuItem(
+                        icon: Icons.account_balance_wallet_rounded,
+                        title: 'My Digital Wallet',
+                        subtitle: 'FastPass balance & instant top-up',
+                        onTap: () => context.push('/profile/wallet'),
+                      ),
+                      _buildMenuItem(
                         icon: Icons.credit_card_rounded,
                         title: 'Payment Methods',
                         subtitle: 'Manage saved cards & billing',
