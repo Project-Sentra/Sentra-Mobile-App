@@ -75,6 +75,15 @@ import '../../features/booking/domain/usecases/get_active_reservations_usecase.d
 import '../../features/booking/domain/usecases/cancel_reservation_usecase.dart';
 import '../../features/booking/presentation/bloc/booking_bloc.dart';
 
+// Wallet feature
+import '../../features/wallet/data/datasources/wallet_remote_data_source.dart';
+import '../../features/wallet/data/repositories/wallet_repository_impl.dart';
+import '../../features/wallet/domain/repositories/wallet_repository.dart';
+import '../../features/wallet/domain/usecases/get_wallet_usecase.dart';
+import '../../features/wallet/domain/usecases/top_up_wallet_usecase.dart';
+import '../../features/wallet/domain/usecases/get_wallet_transactions_usecase.dart';
+import '../../features/wallet/presentation/bloc/wallet_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -263,6 +272,31 @@ Future<void> initializeDependencies() async {
       getUserReservationsUseCase: sl(),
       getActiveReservationsUseCase: sl(),
       cancelReservationUseCase: sl(),
+    ),
+  );
+
+  // ========== Wallet Feature ==========
+  // Data sources
+  sl.registerLazySingleton<WalletRemoteDataSource>(
+    () => WalletRemoteDataSourceImpl(supabaseClient: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<WalletRepository>(
+    () => WalletRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetWalletUseCase(sl()));
+  sl.registerLazySingleton(() => TopUpWalletUseCase(sl()));
+  sl.registerLazySingleton(() => GetWalletTransactionsUseCase(sl()));
+
+  // Bloc
+  sl.registerFactory(
+    () => WalletBloc(
+      getWalletUseCase: sl(),
+      topUpWalletUseCase: sl(),
+      getWalletTransactionsUseCase: sl(),
     ),
   );
 }

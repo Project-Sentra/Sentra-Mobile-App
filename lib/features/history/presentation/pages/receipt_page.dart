@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/error_sanitizer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../parking/domain/entities/parking_session.dart';
+import '../../../payment/domain/usecases/process_payment_usecase.dart';
 import '../receipt/receipt_pdf.dart';
 
 /// Receipt for a completed parking session (FR-07), shareable as a PDF.
@@ -19,8 +23,16 @@ class ReceiptPage extends StatefulWidget {
 
 class _ReceiptPageState extends State<ReceiptPage> {
   bool _sharing = false;
+  bool _isPaying = false;
+  late ParkingSession _currentSession;
 
-  ParkingSession get session => widget.session;
+  @override
+  void initState() {
+    super.initState();
+    _currentSession = widget.session;
+  }
+
+  ParkingSession get session => _currentSession;
 
   Future<void> _sharePdf() async {
     setState(() => _sharing = true);
@@ -38,6 +50,97 @@ class _ReceiptPageState extends State<ReceiptPage> {
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
+    }
+  }
+
+  Future<void> _handlePayNow() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) {
+      ErrorSanitizer.showError(
+        context,
+        'You must be signed in to make a payment.',
+      );
+      return;
+    }
+
+    final amountToPay = (_currentSession.amountLkr ?? 0).toDouble();
+    if (amountToPay <= 0) {
+      ErrorSanitizer.showError(context, 'Invalid payment amount.');
+      return;
+    }
+
+    setState(() => _isPaying = true);
+
+    try {
+      final paymentResult = await sl<ProcessPaymentUseCase>()(
+        ProcessPaymentParams(
+          userId: userId,
+          paymentMethodId: 'stripe',
+          amount: amountToPay,
+          parkingSessionId: _currentSession.id.toString(),
+        ),
+      );
+
+      if (!mounted) return;
+
+      await paymentResult.fold(
+        (failure) async {
+          if (mounted) {
+            ErrorSanitizer.showError(context, failure.message);
+          }
+        },
+        (payment) async {
+          // Update status in Supabase table
+          try {
+            await Supabase.instance.client
+                .from('parking_sessions')
+                .update({'payment_status': 'paid'})
+                .eq('id', _currentSession.id);
+          } catch (_) {}
+
+          if (mounted) {
+            setState(() {
+              _currentSession = ParkingSession(
+                id: _currentSession.id,
+                plateNumber: _currentSession.plateNumber,
+                spotName: _currentSession.spotName,
+                entryTime: _currentSession.entryTime,
+                exitTime: _currentSession.exitTime,
+                durationMinutes: _currentSession.durationMinutes,
+                amountLkr: _currentSession.amountLkr,
+                facilityName: _currentSession.facilityName,
+                facilityId: _currentSession.facilityId,
+                hourlyRate: _currentSession.hourlyRate,
+                sessionType: _currentSession.sessionType,
+                paymentStatus: 'paid',
+                payment: SessionPayment(
+                  id: int.tryParse(payment.id) ?? 0,
+                  amount: payment.amount.round(),
+                  method: 'card',
+                  status: 'completed',
+                  transactionRef: payment.transactionId,
+                  createdAt: payment.createdAt,
+                ),
+                createdAt: _currentSession.createdAt,
+              );
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Payment successful! LKR ${amountToPay.toStringAsFixed(0)} paid via Card.',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPaying = false);
+      }
     }
   }
 
@@ -86,33 +189,98 @@ class _ReceiptPageState extends State<ReceiptPage> {
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: _sharing ? null : _sharePdf,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textDark,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+            if (!session.isPaid && !session.isWaived) ...[
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isPaying ? null : _handlePayNow,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textDark,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: _isPaying
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textDark,
+                          ),
+                        )
+                      : const Icon(Icons.credit_card_rounded),
+                  label: Text(
+                    _isPaying
+                        ? 'Processing Payment...'
+                        : 'Pay Now (${formatLkr(session.amountLkr ?? 0)})',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ),
-                icon: _sharing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.textDark,
-                        ),
-                      )
-                    : const Icon(Icons.ios_share),
-                label: Text(
-                  'Share PDF receipt',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _sharing || _isPaying ? null : _sharePdf,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.cardBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: _sharing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.ios_share, size: 18),
+                  label: Text(
+                    'Share PDF receipt',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ] else ...[
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _sharing ? null : _sharePdf,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textDark,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: _sharing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textDark,
+                          ),
+                        )
+                      : const Icon(Icons.ios_share),
+                  label: Text(
+                    'Share PDF receipt',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
