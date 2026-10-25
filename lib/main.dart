@@ -46,34 +46,7 @@ void main() async {
 
   runApp(const SentraApp());
 }
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
 
-//   await Supabase.initialize(
-//     url: 'https://pnopbaulalcwaucrynim.supabase.co',
-//     anonKey: 'YOUR_REAL_ANON_KEY',
-//   );
-
-//   Stripe.publishableKey = stripePublishableKey;
-//   await Stripe.instance.applySettings();
-
-//   await di.initializeDependencies();
-//   runApp(const SentraApp());
-//   // runApp(
-//   //   const MaterialApp(
-//   //     debugShowCheckedModeBanner: false,
-//   //     home: Scaffold(
-//   //       backgroundColor: Colors.blue,
-//   //       body: Center(
-//   //         child: Text(
-//   //           "SUPABASE + STRIPE WORKING",
-//   //           style: TextStyle(color: Colors.white, fontSize: 22),
-//   //         ),
-//   //       ),
-//   //     ),
-//   //   ),
-//   // );
-// }
 class SentraApp extends StatelessWidget {
   const SentraApp({super.key});
 
