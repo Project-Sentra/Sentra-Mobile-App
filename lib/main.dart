@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,6 +9,7 @@ import 'core/env/supabase.dart';
 import 'core/env/stripe.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/offline_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,14 +34,13 @@ void main() async {
     }
     return true;
   }());
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseKey,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
 
-  // Initialize Stripe
-  Stripe.publishableKey = stripePublishableKey;
-  await Stripe.instance.applySettings();
+  // flutter_stripe uses dart:io platform APIs and is not supported on Web.
+  if (!kIsWeb) {
+    Stripe.publishableKey = stripePublishableKey;
+    await Stripe.instance.applySettings();
+  }
 
   // Initialize dependencies
   await di.initializeDependencies();
@@ -57,8 +58,8 @@ class SentraApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       routerConfig: AppRouter.router,
+      builder: (context, child) =>
+          OfflineBanner(child: child ?? const SizedBox.shrink()),
     );
   }
-
-  
 }
