@@ -23,7 +23,7 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
 
   ParkingRemoteDataSourceImpl(this.supabaseClient);
 
-  // ========== LOCATIONS ==========
+  
 
   @override
   Future<List<ParkingLocationModel>> getParkingLocations() async {
@@ -153,7 +153,7 @@ class ParkingRemoteDataSourceImpl implements ParkingRemoteDataSource {
     }
   }
 
-  // ========== SPOTS ==========
+  
 
   @override
   Future<List<ParkingSlotModel>> getParkingSpots() async {

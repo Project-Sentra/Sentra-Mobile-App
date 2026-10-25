@@ -11,7 +11,7 @@ class ParkingRepositoryImpl implements ParkingRepository {
 
   ParkingRepositoryImpl(this.remoteDataSource);
 
-  // ========== LOCATIONS ==========
+  
 
   @override
   Future<Either<Failure, List<ParkingLocation>>> getParkingLocations() async {
@@ -53,7 +53,7 @@ class ParkingRepositoryImpl implements ParkingRepository {
     }
   }
 
-  // ========== SPOTS ==========
+  
 
   @override
   Future<Either<Failure, List<ParkingSlot>>> getParkingSpots() async {

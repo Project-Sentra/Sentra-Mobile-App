@@ -90,7 +90,7 @@ Future<void> initializeDependencies() async {
   // External
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
 
-  // ========== Auth Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(sl()),
@@ -119,7 +119,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Parking Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<ParkingRemoteDataSource>(
     () => ParkingRemoteDataSourceImpl(sl()),
@@ -144,7 +144,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Profile Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<ProfileRemoteDataSource>(
     () => ProfileRemoteDataSourceImpl(sl()),
@@ -169,7 +169,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Vehicles Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<VehicleRemoteDataSource>(
     () => VehicleRemoteDataSourceImpl(supabaseClient: sl()),
@@ -196,7 +196,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Payment Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<PaymentRemoteDataSource>(
     () => PaymentRemoteDataSourceImpl(supabaseClient: sl()),
@@ -225,7 +225,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== History Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<HistoryRemoteDataSource>(
     () => HistoryRemoteDataSourceImpl(supabaseClient: sl()),
@@ -248,7 +248,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Booking Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<BookingRemoteDataSource>(
     () => BookingRemoteDataSourceImpl(sl()),
@@ -275,7 +275,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // ========== Wallet Feature ==========
+  
   // Data sources
   sl.registerLazySingleton<WalletRemoteDataSource>(
     () => WalletRemoteDataSourceImpl(supabaseClient: sl()),
