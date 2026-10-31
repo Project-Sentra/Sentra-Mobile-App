@@ -19,6 +19,7 @@ import '../../features/history/presentation/pages/receipt_page.dart';
 import '../../features/parking/domain/entities/parking_session.dart';
 import '../../features/booking/presentation/pages/my_bookings_page.dart';
 import '../../features/wallet/presentation/pages/wallet_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -89,6 +90,10 @@ class AppRouter {
       GoRoute(
         path: '/profile/wallet',
         builder: (context, state) => const WalletPage(),
+      ),
+      GoRoute(
+        path: '/profile/onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         path: '/profile/notifications',

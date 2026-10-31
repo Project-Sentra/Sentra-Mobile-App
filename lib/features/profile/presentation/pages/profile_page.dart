@@ -162,6 +162,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         subtitle: 'FAQs, contact & guides',
                         onTap: () => context.push('/profile/help-support'),
                       ),
+                      _buildMenuItem(
+                        icon: Icons.explore_outlined,
+                        title: 'How Sentra Works',
+                        subtitle: 'Learn how to use Sentra',
+                        onTap: () => context.push('/profile/onboarding'),
+                      ),
                       const SizedBox(height: 24),
                       _buildSectionHeader('ACCOUNT'),
                       const SizedBox(height: 10),
